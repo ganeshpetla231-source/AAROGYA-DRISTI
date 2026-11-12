@@ -13,7 +13,10 @@ async function connectDB() {
       mongoose.connection.on('disconnected', () => {
         connectionPromise = null;
       });
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+      await mongoose.connect(uri, {
+        dbName: process.env.MONGODB_DB_NAME || 'aarogya_drishti',
+        serverSelectionTimeoutMS: 5000
+      });
       return mongoose.connection;
     })().catch((error) => {
       connectionPromise = null;

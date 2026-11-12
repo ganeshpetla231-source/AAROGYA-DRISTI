@@ -6,7 +6,7 @@ The project includes starter manifests, but no cloud account, Atlas cluster, dom
 
 1. Create a production cluster in the selected region and a database user with only the app database permissions required by the service.
 2. Restrict network access to the API host's documented egress ranges or a private network connection. Do not use `0.0.0.0/0` as a permanent rule.
-3. Store the SRV URI as Render `MONGODB_URI`; URL-encode credentials and do not commit the URI.
+3. Store the SRV URI as Render `MONGODB_URI`; URL-encode credentials and do not commit the URI. Set `MONGODB_DB_NAME=aarogya_drishti` so a URI without a database path cannot silently select MongoDB's default `test` database.
 4. Configure backups, retention, encryption, and an operational restore drill.
 
 ## 2. Cloudinary storage
@@ -21,7 +21,7 @@ Use the Python service in `render.yaml` (`rootDir: ai-service`, health path `/he
 
 Use the Node service in `render.yaml`; health path `/api/health`. Set:
 
-- `NODE_ENV=production`, `MONGODB_URI`, and exact `CLIENT_URL=https://<your-vercel-domain>`.
+- `NODE_ENV=production`, `MONGODB_URI`, `MONGODB_DB_NAME=aarogya_drishti`, and exact `CLIENT_URL=https://<your-vercel-domain>`.
 - Unique `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `SCREENING_IMAGE_ENCRYPTION_KEY`, and `PATIENT_AADHAAR_ENCRYPTION_KEY` values (at least 32 random characters each; JWT keys must differ). Keep the Aadhaar key separate and stable so registered Aadhaar values remain decryptable by authorized services if needed.
 - `FILE_STORAGE_DRIVER=cloudinary`, the three `CLOUDINARY_*` credentials (or `CLOUDINARY_URL`), HTTPS `AI_SERVICE_URL`, and the same production `AI_SERVICE_TOKEN` set on the AI service.
 - `STAFF_REGISTRATION_CODES` as JSON secrets, SMTP settings, and TURN credentials. Use unique staff codes and rotate operational credentials.
@@ -31,7 +31,7 @@ Verify that logs contain request metadata only, error bodies do not include reco
 
 ## 5. Frontend on Vercel
 
-Import the repository with root directory at repository root and use `vercel.json`. Set `VITE_API_BASE_URL=https://<render-api-host>/api` for Production, Preview, and Development as appropriate. Add the exact deployed frontend origin to API `CLIENT_URL`; redeploy the API after changing it. Vite embeds this URL in public browser JavaScript, so it must be an API URL and never a secret or key.
+Import the repository with root directory at repository root and use `vercel.json`. Set `VITE_API_BASE_URL=https://<render-api-host>/api` for Production, Preview, and Development as appropriate. The frontend also accepts the API origin without `/api` and appends the path automatically. Add the exact deployed frontend origin to API `CLIENT_URL`; redeploy the API after changing it. Vite embeds this URL in public browser JavaScript, so it must be an API URL and never a secret or key.
 
 ## 6. Release checks
 

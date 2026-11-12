@@ -1,8 +1,16 @@
 import axios from 'axios';
 import { cachePublishedEducation, readCachedEducation } from './offlineStorage.js';
 
+const configuredApiBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '/api' : 'https://aarogya-dristi.onrender.com')
+).replace(/\/+$/, '');
+const apiBaseUrl = configuredApiBaseUrl.endsWith('/api')
+  ? configuredApiBaseUrl
+  : `${configuredApiBaseUrl}/api`;
+
 const api = axios.create({
-  baseURL: "https://aarogya-dristi.onrender.com/api" ,
+  baseURL: apiBaseUrl,
   timeout: 10000,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' }
