@@ -1,0 +1,11 @@
+const express = require('express');
+const { authenticate } = require('../middleware/authMiddleware');
+const { authorizeResource } = require('../middleware/authorizeResource');
+const controller = require('../controllers/notificationController');
+const router = express.Router();
+router.use(authenticate, authorizeResource('notifications'));
+router.get('/', controller.list);
+router.get('/unread-count', controller.unreadCount);
+router.patch('/read-all', controller.markAllRead);
+router.patch('/:id/read', controller.markRead);
+module.exports = router;

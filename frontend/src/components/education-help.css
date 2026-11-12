@@ -1,0 +1,9 @@
+.education-help{padding:17px}
+.education-help>h2{margin:0 0 12px;color:#e5f2fa;font-size:15px}
+.education-help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.education-help-grid article{padding:13px;border:1px solid #29455a;border-radius:10px;background:#0c1d2c}
+.education-help-grid h3{margin:0 0 7px;color:#70ddd2;font-size:12px}
+.education-help-grid p,.education-help-note{margin:0;color:#a9bdcd;font-size:10px;line-height:1.65}
+.education-help-grid p+p{margin-top:7px}
+.education-help-note{margin-top:12px;color:#e6c982}
+@media(max-width:700px){.education-help-grid{grid-template-columns:1fr}}

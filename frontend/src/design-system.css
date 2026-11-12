@@ -1,0 +1,318 @@
+:root {
+  --page: #f2fffb;
+  --page-soft: #eafbF5;
+  --font-body: Inter, "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: Inter, "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --glass-surface: rgba(255, 255, 255, 0.35);
+  --glass-blur: 12px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 64px;
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: clamp(20px, 1.8vw, 22px);
+  --text-2xl: clamp(24px, 2.2vw, 26px);
+  --text-nav: 15px;
+  --text-button: 15px;
+  --text-label: 14px;
+  --line-body: 1.55;
+  --line-heading: 1.25;
+  --radius-card: 20px;
+  --radius-pill: 999px;
+  --focus-ring: #8ecdb3;
+}
+
+html {
+  min-width: 320px;
+  background: var(--page);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 8% 8%, color-mix(in srgb, var(--mint) 48%, transparent), transparent 32%),
+    radial-gradient(ellipse at 94% 26%, color-mix(in srgb, var(--mint-soft) 48%, transparent), transparent 31%),
+    linear-gradient(140deg, var(--page), var(--page-soft) 55%, #f8fdfa);
+  font-family: var(--font-body);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font-family: var(--font-body);
+}
+
+:is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.marketing-site {
+  --m-ink: var(--ink);
+  --m-green: var(--teal);
+  --m-deep: var(--teal-dark);
+  --m-muted: var(--muted);
+  --m-line: var(--line);
+  --m-mint: var(--mint);
+  --m-pale: var(--page);
+  --m-lime: var(--lime);
+  color: var(--ink);
+  overflow-x: clip;
+  overflow-y: visible;
+  background:
+    radial-gradient(ellipse at 7% 9%, color-mix(in srgb, var(--mint) 48%, transparent), transparent 32%),
+    radial-gradient(ellipse at 94% 33%, color-mix(in srgb, var(--mint-soft) 48%, transparent), transparent 33%),
+    linear-gradient(140deg, var(--page), var(--page-soft) 54%, #f8fdfa);
+  font-family: var(--font-body);
+}
+
+.marketing-home,
+.marketing-info {
+  color: var(--ink);
+}
+
+.hero-heading-row h1 {
+  font-size: clamp(48px, 5.2vw, 64px);
+}
+
+.auth-card input,
+.auth-card select,
+.hero-book-card select {
+  border-color: #ffffffd9;
+  background-color: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.service-card:after {
+  content: none;
+}
+
+.service-watermark {
+  position: absolute;
+  top: 34px;
+  right: 2px;
+  width: 90px;
+  height: 110px;
+  color: #fff;
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.service-watermark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.marketing-nav-links > a,
+.nav-menu-toggle {
+  min-height: 44px;
+}
+
+.nav-menu-toggle {
+  position: relative;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+}
+
+.auth-card input,
+.auth-card select,
+.hero-book-card select,
+.contact-methods a,
+.appointment-steps,
+.info-detail-grid article {
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+.dashboard-shell .panel,
+.dashboard-shell .stat-card,
+.dashboard-shell .role-dashboard-panel,
+.dashboard-shell .settings-panel {
+  border-radius: var(--radius-card);
+}
+
+.dashboard-shell .sidebar nav button.nav-current,
+.role-dashboard-primary,
+.telemedicine-join {
+  background-color: var(--teal);
+}
+
+.dashboard-shell .sidebar nav button.nav-current {
+  border-radius: 14px;
+}
+
+.button-lime,
+.button-dark,
+.button-outline,
+.nav-login,
+.nav-menu-toggle,
+.sidebar nav button {
+  border-radius: var(--radius-pill);
+}
+
+@media (max-width: 600px) {
+  .hero-heading-row h1 {
+    font-size: clamp(42px, 10.8vw, 52px);
+  }
+
+  .hero-image-card {
+    display: grid;
+    min-height: 0;
+    gap: 12px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .hero-image-card > img {
+    position: relative;
+    inset: auto;
+    height: clamp(220px, 58vw, 270px);
+    border: 1px solid #fff;
+    border-radius: var(--radius-card);
+  }
+
+  .hero-image-wash {
+    inset: 0 0 auto;
+    height: clamp(220px, 58vw, 270px);
+    border-radius: var(--radius-card);
+  }
+
+  .hero-image-caption {
+    top: calc(clamp(220px, 58vw, 270px) - 36px);
+    bottom: auto;
+  }
+
+  .hero-book-card {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    margin: 0;
+    transform: none;
+  }
+}
+
+@media (min-width: 801px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 155px 155px;
+  }
+
+  .bento-card.wide {
+    grid-column: 1 / span 2;
+    grid-row: 1 / span 2;
+  }
+
+  .bento-card.tall {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    transform: none;
+  }
+
+  .bento-card:nth-child(3) {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .bento-card:nth-child(4) {
+    grid-column: 4;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 800px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 220px 170px 170px;
+  }
+
+  .bento-card.wide {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .bento-card.tall {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+  }
+
+  .bento-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .bento-card:nth-child(4) {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 520px) {
+  .bento-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(4, 190px);
+  }
+
+  .bento-card.wide,
+  .bento-card.tall,
+  .bento-card:nth-child(3),
+  .bento-card:nth-child(4) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .service-card,
+    .team-card,
+    .pricing-card,
+    .bento-card {
+      animation: care-card-enter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 28%;
+    }
+
+    @keyframes care-card-enter {
+      from {
+        opacity: 0.72;
+        translate: 0 16px;
+      }
+
+      to {
+        opacity: 1;
+        translate: 0 0;
+      }
+    }
+  }
+}

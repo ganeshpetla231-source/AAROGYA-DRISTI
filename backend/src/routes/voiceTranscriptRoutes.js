@@ -1,0 +1,20 @@
+const express = require('express');
+const multer = require('multer');
+const { authenticate } = require('../middleware/authMiddleware');
+const ApiError = require('../utils/ApiError');
+const controller = require('../controllers/voiceTranscriptController');
+const { expensiveLimiter } = require('../middleware/rateLimits');
+const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 }, fileFilter: (req, file, done) => {
+  const type = file.mimetype.split(';', 1)[0].toLowerCase();
+  if (!['audio/webm', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/flac', 'audio/mpeg', 'audio/mp3'].includes(type)) return done(new ApiError(415, 'Record audio as WebM/Opus, Ogg/Opus, WAV, FLAC, or MP3'));
+  done(null, true);
+} });
+router.use(authenticate);
+router.get('/voice-transcripts', controller.list);
+router.post('/voice-transcripts/voice', expensiveLimiter, upload.single('audio'), controller.voice);
+router.post('/voice-transcripts/manual', controller.manual);
+router.post('/voice-transcripts/:id/translate', controller.translate);
+router.patch('/voice-transcripts/:id/review', controller.review);
+router.post('/voice/synthesize', expensiveLimiter, controller.synthesize);
+module.exports = router;

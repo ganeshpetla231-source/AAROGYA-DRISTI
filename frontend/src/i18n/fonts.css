@@ -1,0 +1,7 @@
+html:lang(te) {
+  font-family: "Noto Sans Telugu", Gautami, "Nirmala UI", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+html:lang(hi) {
+  font-family: "Noto Sans Devanagari", "Nirmala UI", Inter, ui-sans-serif, system-ui, sans-serif;
+}

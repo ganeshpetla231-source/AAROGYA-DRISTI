@@ -1,0 +1,63 @@
+.admin-referrals {
+  min-width: 0;
+}
+
+.admin-referrals-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-referrals-controls label {
+  display: grid;
+  gap: 6px;
+  color: #526a7f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-referrals-controls input,
+.admin-referrals-controls select {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd8e5;
+  border-radius: 8px;
+  color: #15344d;
+  background: #fff;
+  font: inherit;
+}
+
+.admin-referrals-privacy {
+  margin: 0 0 14px;
+  color: #61778c;
+  font-size: 13px;
+}
+
+.admin-referrals-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-referrals .role-dashboard-table small {
+  display: block;
+  margin-top: 3px;
+  color: #71859a;
+}
+
+.admin-referrals-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .admin-referrals-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-referrals-pagination {
+    justify-content: space-between;
+  }
+}

@@ -1,0 +1,49 @@
+.interaction-feedback {
+  animation: interaction-feedback-pulse 620ms ease-out;
+}
+
+.interaction-open {
+  animation: interaction-open 420ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.interaction-content-enter,
+.route-content-enter {
+  animation: interaction-content-enter 420ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.topic-radial-card.interaction-feedback,
+.topic-home-hint.interaction-feedback {
+  animation-name: topic-selection-glow;
+  animation-duration: 720ms;
+}
+
+@keyframes interaction-feedback-pulse {
+  0%, 100% { filter: brightness(1); }
+  28% { filter: brightness(1.14); }
+  55% { filter: brightness(1.04); }
+}
+
+@keyframes topic-selection-glow {
+  0%, 100% { filter: brightness(1); }
+  28% { filter: brightness(1.2) drop-shadow(0 0 14px color-mix(in srgb, var(--topic-accent, #0fb5b5) 55%, transparent)); }
+  58% { filter: brightness(1.06) drop-shadow(0 0 5px color-mix(in srgb, var(--topic-accent, #0fb5b5) 30%, transparent)); }
+}
+
+@keyframes interaction-open {
+  from { opacity: 0; translate: 0 8px; scale: .985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@keyframes interaction-content-enter {
+  from { opacity: .7; scale: .995; }
+  to { opacity: 1; scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interaction-feedback,
+  .interaction-open,
+  .interaction-content-enter,
+  .route-content-enter {
+    animation-duration: .01ms !important;
+  }
+}

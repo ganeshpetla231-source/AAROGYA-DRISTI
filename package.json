@@ -1,0 +1,17 @@
+{
+  "name": "aarogya-drishti",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "concurrently -k -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:full": "concurrently -k -n backend,frontend,ai -c blue,green,magenta \"npm:dev:backend\" \"npm:dev:frontend\" \"npm:dev:ai\"",
+    "dev:ai": "node scripts/start-ai-service.js",
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build",
+    "start": "npm --workspace backend start",
+    "test": "npm run test --workspace backend && npm run test:e2e --workspace frontend"
+  },
+  "devDependencies": { "concurrently": "^9.1.2" }
+}

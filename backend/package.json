@@ -1,0 +1,33 @@
+{
+  "name": "aarogya-drishti-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/seed.js",
+    "provision:admin": "node src/provisionAdmin.js",
+    "seed:education": "node src/seedEducation.js",
+    "seed:directory": "node src/seedGovernmentDirectory.js",
+    "test": "npm run seed && npm run seed:education && node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.3.1",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

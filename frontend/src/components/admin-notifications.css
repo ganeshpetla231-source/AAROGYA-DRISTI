@@ -1,0 +1,105 @@
+.admin-notifications {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-notification-compose form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-notification-compose form > label {
+  display: grid;
+  gap: 6px;
+  color: #526a7f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-notification-compose input,
+.admin-notification-compose select,
+.admin-notification-compose textarea,
+.admin-notification-history select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd8e5;
+  border-radius: 8px;
+  color: #15344d;
+  background: #fff;
+  font: inherit;
+}
+
+.admin-notification-compose textarea {
+  resize: vertical;
+}
+
+.admin-notification-compose .admin-notification-message,
+.admin-notification-compose form > p,
+.admin-notification-compose form > button {
+  grid-column: 1 / -1;
+}
+
+.admin-recipient-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+.admin-notification-history > .panel-heading > label {
+  display: grid;
+  gap: 5px;
+  min-width: 150px;
+  color: #526a7f;
+  font-size: 13px;
+}
+
+.admin-notification-list {
+  display: grid;
+}
+
+.admin-notification-list > article {
+  display: grid;
+  grid-template-columns: minmax(160px, .7fr) minmax(0, 1.5fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e8eef4;
+}
+
+.admin-notification-status {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+}
+
+.admin-notification-status small,
+.admin-notification-list time {
+  color: #71859a;
+  font-size: 12px;
+}
+
+.admin-notification-list p {
+  margin: 5px 0;
+  color: #526a7f;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .admin-notification-compose form,
+  .admin-notification-list > article {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-notification-history > .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-recipient-pagination {
+    justify-content: space-between;
+  }
+}

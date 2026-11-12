@@ -1,0 +1,13 @@
+const express = require('express');
+const { authenticate, authorize } = require('../middleware/authMiddleware');
+const controller = require('../controllers/patientQrController');
+const router = express.Router();
+router.use(authenticate);
+router.get('/me', authorize('patient'), controller.me);
+router.post('/issue', authorize('patient'), controller.issue);
+router.post('/revoke', authorize('patient'), controller.revoke);
+router.post('/scan', authorize('asha', 'doctor'), controller.scan);
+router.get('/history', authorize('patient', 'asha', 'doctor'), controller.history);
+router.get('/consent', authorize('patient'), controller.consent);
+router.put('/consent', authorize('patient'), controller.setConsent);
+module.exports = router;

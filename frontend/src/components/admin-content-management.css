@@ -1,0 +1,41 @@
+.admin-content-management {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-content-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid #dce5ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admin-content-tabs button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #36506a;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.admin-content-tabs button.is-active {
+  border-color: #b6d5f3;
+  color: #0e4b7f;
+  background: #eaf5ff;
+}
+
+.admin-content-tabs button:focus-visible {
+  outline: 2px solid #1476b8;
+  outline-offset: 2px;
+}

@@ -1,0 +1,10 @@
+// These fictional facilities and coordinates exist only to demonstrate the map UI.
+export const sampleFacilities = [
+  { id: 'demo-phc-1', name: 'Demonstration PHC A', category: 'PHC', area: 'Sample Village North', pin: 'Sample PIN 000001', address: 'Sample Village North, Demo Block, Demo District · Sample PIN 000001', phone: 'Demo contact only', x: 18, y: 31, distanceKm: 2.4, minutes: 9, color: '#45d5bd' },
+  { id: 'demo-phc-2', name: 'Demonstration PHC B', category: 'PHC', area: 'Sample Village East', pin: 'Sample PIN 000002', address: 'Sample Village East, Demo Block, Demo District · Sample PIN 000002', phone: 'Demo contact only', x: 76, y: 27, distanceKm: 4.8, minutes: 16, color: '#45d5bd' },
+  { id: 'demo-chc-1', name: 'Demonstration CHC A', category: 'CHC', area: 'Sample Mandal Center', pin: 'Sample PIN 000003', address: 'Sample Mandal Center, Demo District · Sample PIN 000003', phone: 'Demo contact only', x: 61, y: 57, distanceKm: 7.1, minutes: 22, color: '#63a8ff' },
+  { id: 'demo-gov-1', name: 'Demonstration Government Hospital', category: 'Government hospital', area: 'Sample District Center', pin: 'Sample PIN 000004', address: 'Sample District Center, Demo District · Sample PIN 000004', phone: 'Demo contact only', x: 37, y: 73, distanceKm: 11.6, minutes: 34, color: '#bd8cff' },
+  { id: 'demo-specialist-1', name: 'Demonstration Specialist Hospital', category: 'Specialist hospital', area: 'Sample Mandal West', pin: 'Sample PIN 000005', address: 'Sample Mandal West, Demo District · Sample PIN 000005', phone: 'Demo contact only', x: 85, y: 70, distanceKm: 14.2, minutes: 41, color: '#ff9b72' },
+  { id: 'demo-dental-1', name: 'Demonstration Dental Service', category: 'Dental service', area: 'Sample Village South', pin: 'Sample PIN 000006', address: 'Sample Village South, Demo Block, Demo District · Sample PIN 000006', phone: 'Demo contact only', x: 15, y: 80, distanceKm: 5.3, minutes: 18, color: '#f1c45e' }
+];
+export const facilityCategories = ['All categories', 'PHC', 'CHC', 'Government hospital', 'Specialist hospital', 'Dental service'];

@@ -1,0 +1,294 @@
+AAROGYA DRISHTI – Phase-wise AI Build Prompts (MERN)
+A complete build guide: UI specification taken from your roadmap image, one master prompt, twelve phase prompts, and helper prompts. Give these to Cursor, Claude Code, VS Code + Copilot, or any AI coding assistant, one at a time.
+1. How to use this document
+1. Create the folder AAROGYA-DRISHTI with sub-folders: project-references, frontend, backend, ai-service, documentation.
+2. Save your roadmap image (the glowing 12-card design) in project-references as roadmap-reference.png. Save any other UI images there too.
+3. Open the folder in your AI coding tool and attach the images.
+4. Send Section 3 (Master Prompt) first. Then send Phase 1, test it, commit to Git, and only then send Phase 2.
+5. Never send two phases together. Never skip a failed phase.
+6. After every phase run the app, test the acceptance checks, and commit with a message such as 'Phase 3 complete'.
+Important: AI tools cannot literally see your image unless it is attached to the chat. The written UI specification in Section 2 is included so the design is reproduced even if the image is not read perfectly.
+2. UI specification (from your roadmap image)
+Overall look: dark navy-blue healthcare background with soft blue glow, futuristic and professional. Smooth animations. Fully responsive.
+Header: small circular AI-tooth logo on the left of the title. Title text AAROGYA DRISHTI in large cyan-to-blue gradient letters. Under it, DEVELOPMENT ROADMAP in spaced capital letters. Tagline: Better Vision · Healthier Communities · Smarter Healthcare.
+Center: one large circular glowing button containing the mascot, a smiling white tooth wearing a dark blue visor (eyes shown as white dots). It has a pulsing blue neon ring. This is the main interactive element.
+Around the center: twelve rounded cards arranged radially (desktop), each connected to the center by thin glowing blue neon lines with small node dots. Each card has a numbered badge, an icon, a title and three or four short bullet points.
+Card accent colors (border glow and badge):
+• 1 Project Planning and Architecture – violet/purple
+• 2 Frontend UI Design – bright blue
+• 3 Backend and MongoDB – green
+• 4 Authentication and Roles – orange
+• 5 Patient QR Code System – teal
+• 6 Oral Screening and AI Detection – indigo/purple
+• 7 Telugu Multilingual Voice Assistant – magenta/pink
+• 8 Doctor Dashboard and Medical Records – blue
+• 9 Google Maps and Referral Navigation – green
+• 10 Telemedicine and Appointments – orange
+• 11 Notifications and Analytics – purple
+• 12 Security, Testing and Deployment – cyan/teal
+Bottom bar: a horizontal chevron progress bar with twelve numbered steps in the same colors (Project Planning, Frontend UI Design, Backend and MongoDB, Authentication and Roles, QR Code System, AI Detection, Voice Assistant, Doctor Dashboard, Maps and Navigation, Telemedicine and Appointments, Notifications and Analytics, Security and Deployment). Note: your image labels step 10 as Telemedicine and Analytics; use Telemedicine and Appointments, and step 11 as Notifications and Analytics.
+Behaviour: clicking the center logo opens Topic 1 beside it. Clicking any card or bottom-bar step opens that topic. The detail panel has a title, description, feature list, Previous, Next and Close buttons. After Topic 12, show a Project Completed message. Selected card is highlighted; others dim slightly.
+Responsive rules: desktop = radial layout with SVG neon lines; tablet = two-column grid of cards; mobile = single column, center logo at top, bottom bar scrolls horizontally, detail panel opens as a bottom sheet.
+Inside the actual application (after login): dark navy sidebar, white and light-blue content area, teal and cyan highlights, cards, charts, tables, and an English/Telugu language switch.
+3. Master prompt (send first)
+Act as a Senior MERN Stack Developer, Software Architect, UI/UX Designer, AI Integration Engineer and Healthcare Application Developer.
+I am building ONE real, working application named AAROGYA DRISHTI – an AI-assisted oral health screening, patient QR identification, telemedicine, referral and follow-up platform for villages, ASHA workers, doctors, hospitals and district administrators. It must show the complete journey: village screening → doctor review → specialist referral → diagnostics → treatment → follow-up.
+Tech stack:
+• Frontend: React (Vite), Tailwind CSS, React Router, Axios, Recharts, React Hook Form, Lucide icons, i18n for English and Telugu.
+• Backend: Node.js, Express, Mongoose, JWT (access and refresh tokens), bcrypt, Socket.IO, express-validator or Zod, helmet, rate limiting.
+• Database: MongoDB (Atlas for production).
+• AI service: Python FastAPI microservice.
+• Integrations: Google Maps Platform, WebRTC, Cloudinary or secure object storage, speech-to-text and text-to-speech supporting Telugu.
+Roles: Patient, ASHA Worker, Medical Officer/Doctor, Specialist, Hospital Staff, District Administrator, Super Admin. Each has its own dashboard and permissions.
+UI: follow the attached roadmap image and the UI specification I give (dark navy, neon glow, twelve colored topic cards around a central AI-tooth logo button, bottom chevron bar). The public landing page is the interactive roadmap; the logged-in app uses the navy sidebar dashboard style.
+Rules for you:
+1. Build one phase at a time. Wait for my approval before the next phase.
+2. For each phase: inspect the existing project, explain your plan, list files to create or modify, write COMPLETE working code (no pseudocode), connect frontend, backend and database, give run instructions, give test cases, fix errors, update README.md.
+3. Never break completed phases. Never delete working features unnecessarily.
+4. No fake buttons or dummy features where real functionality is required. If an external API needs credentials, add setup instructions and a clear configuration message.
+5. Use only synthetic demo data. Never store medical data inside a QR code.
+6. AI output is screening support only. Store it separately from the doctor's conclusion. If no validated model exists, build a clearly labelled demonstration inference adapter and never claim real diagnosis.
+7. Never mark a feature complete until you have actually run and tested it.
+Start by analysing my images and requirements, then complete Phase 1 only.
+4. Phase prompts
+Send these one at a time, in order.
+Phase 1 – Project planning and architecture
+Implement Phase 1 only. Create the monorepo: frontend (Vite + React + Tailwind), backend (Express + Mongoose), ai-service (FastAPI skeleton). Create folders: controllers, models, routes, middleware, services, utils, config in backend; components, pages, layouts, hooks, context, services, i18n, assets in frontend. Add .env.example files, MongoDB connection, CORS, a reusable ApiError class, async handler, standard API response helper, a global error middleware, a /api/health endpoint, and root scripts to run frontend and backend together. Write README with install and run steps.
+Acceptance: both servers start, /api/health returns success, the frontend shows the health status from the backend, MongoDB connects.
+Phase 2 – Frontend UI (landing roadmap and dashboards)
+Implement Phase 2 only, with no database yet. Build the interactive roadmap landing page exactly per the UI specification: glowing center AI-tooth button, twelve colored cards connected by SVG neon lines, bottom chevron bar, and a detail panel with title, description, features, Previous, Next, Close, plus a Project Completed message after Topic 12. Store the twelve topics in a data file. Add smooth animations (pulse ring, line glow, card highlight).
+Then build the application UI: login with role selection, patient registration, and separate layouts and dashboards for all seven roles, using sidebar, header, profile menu, stat cards, Recharts charts, responsive tables, search and filters, loading and empty states, and an English/Telugu switch. Mark all data as demonstration data.
+Acceptance: the center button and all twelve cards and bottom-bar steps work; Next and Previous move correctly; layout is correct on mobile, tablet and desktop; every sidebar link opens a page.
+Phase 3 – Backend and MongoDB
+Implement Phase 3 only. Create Mongoose models: User, Patient, PatientQR, OralScreening, MedicalRecord, Prescription, Appointment, Consultation, Hospital, Referral, Notification, Consent, AuditLog. Add indexes and relationships. Create routes, controllers and services with validation, pagination, search, filtering and consistent errors for users, patients, medical history, screenings, appointments, hospitals, referrals and notifications. Add a seed script with synthetic data. Replace mock data in the frontend with Axios calls (service layer, loading, error and success states).
+Acceptance: records are created, read, updated and still present after browser refresh; invalid input returns clear validation errors; seed script runs cleanly.
+Phase 4 – Authentication and roles
+Implement Phase 4 only. Add register and login for all seven roles, bcrypt hashing, JWT access plus refresh tokens (httpOnly cookie or secure storage), logout with token revocation, password rules, forgot and reset password, session expiry, auth middleware and role-authorization middleware. Add protected React routes, an auth context, automatic token refresh, and redirect to the correct dashboard per role. Create synthetic test accounts for every role.
+Acceptance: each role reaches only its own dashboard and APIs; direct URL access to another role's page or API returns 403 or redirects; expired tokens are refreshed or the user is logged out.
+Phase 5 – Patient QR code system
+Implement Phase 5 only. On registration generate a unique Patient ID and an unpredictable, revocable QR token (never put medical data in the QR). Generate a downloadable QR image and a printable patient QR card. Build a camera QR scanner and image-upload scanner. The backend validates the token, checks the user's role, relationship and patient consent, returns only authorized fields, and writes an AuditLog entry for every scan. Add token revocation and regeneration, consent management for the patient, and QR scan history.
+Acceptance: a patient sees only their own record; ASHA and doctor see only permitted fields; a revoked QR fails; scans appear in the audit log.
+Phase 6 – Oral screening and AI detection
+Implement Phase 6 only. Build the workflow: mobile camera capture or upload, format and size validation, blur and lighting checks, secure image storage, call the FastAPI service, show result and confidence, save history, and send suspicious cases to the doctor review queue. Categories: possible oral ulcer, possible thrush, possible gingivitis, other visible abnormality, image quality insufficient, no visible abnormality. If no validated model exists, use a clearly labelled demonstration adapter. Doctors can review, edit and approve. AI results are stored separately from the doctor's assessment and the UI always shows a limitations notice.
+Acceptance: upload goes through to the AI service; low-quality images are rejected with guidance; flagged cases appear in the doctor queue; doctor approval is saved separately.
+Phase 7 – Telugu multilingual voice assistant
+Implement Phase 7 only. Support Telugu, English, Hindi, Tamil and Kannada using a speech service that explicitly supports them. Add microphone permission, start and stop recording, speech-to-text, language detection, translation both ways, live transcript, symptom extraction, saving of original and translated transcripts, text-to-speech playback with controls, doctor review of the transcript, and manual text entry fallback. Build a clean microphone interface in the app's theme. Never convert a transcript into a confirmed diagnosis.
+Acceptance: a Telugu recording produces a transcript and an English translation, both are saved and visible to the doctor; manual entry works when voice fails.
+Phase 8 – Doctor dashboard and electronic health records
+Implement Phase 8 only. Build the patient queue, patient search, QR lookup, oral image history, AI summary viewer, clinical review form, medical history, prescription management, lab report upload, treatment history, doctor notes and follow-up recommendations. A doctor can open an authorized record, review images and AI output, record their own assessment, prescribe, upload reports, recommend referral and schedule follow-up.
+Acceptance: the full patient-to-doctor flow works end to end and persists in MongoDB; AI results and doctor conclusions are visibly separate.
+Phase 9 – Google Maps and referral navigation
+Implement Phase 9 only. Add a Maps page and map sections in the patient, ASHA, doctor and district dashboards. Show the user's location after permission, nearby PHCs, CHCs, government hospitals, specialist hospitals and dental services, with filters, search by name, category and location, address, contact, distance, travel time, directions and a navigation link. Doctors select a referral hospital and it is saved on the patient record, with referral status shown on dashboards. Provide manual village, mandal or PIN search when location is denied. Use clearly labelled sample facilities, not invented real hospitals. Keep API keys in environment variables and restrict browser keys.
+Acceptance: map renders, filters and search work, route and distance display, referral is saved and its status updates.
+Phase 10 – Telemedicine and appointments
+Implement Phase 10 only. Add doctor availability, booking, confirmation, cancellation, rescheduling, upcoming and past consultations, follow-up scheduling and consultation notes. Build WebRTC video rooms with Socket.IO signaling, STUN/TURN configuration, mute, camera toggle, end call, chat, and consultation status. Only authorized participants may join. Support Telugu and English text.
+Acceptance: two different demo accounts in two browsers complete a video call; unauthorized users cannot enter a room; notes and follow-up are saved.
+Phase 11 – Notifications and analytics
+Implement Phase 11 only. Add in-app notifications with read and unread state for appointment confirmations and reminders, follow-ups, doctor review updates, referral updates and report availability, using Socket.IO for live delivery and a scheduler for reminders. Build analytics with Recharts: registered and screened patients, screening categories, doctor-reviewed cases, pending and completed referrals, upcoming follow-ups, and PHC, mandal and district statistics, with date and facility filters and a map visualization. Use aggregated data only; no identifiable patient data in district views.
+Acceptance: reminders and updates arrive and can be marked read; charts match database counts; filters change the results.
+Phase 12 – Security, testing and deployment
+Implement Phase 12 only. Audit every route, API and role permission. Add input validation everywhere, rate limiting, helmet, strict CORS, secure file upload checks, secret handling, audit logs, token expiry and revocation checks, and removal of medical data from logs. Write unit, API, authorization, QR, frontend integration and end-to-end tests, and check mobile responsiveness. Deploy: frontend on Vercel, backend on Render, database on MongoDB Atlas, AI service on a Python host, images in secure cloud storage, all over HTTPS. Produce the final README, API documentation, database schema documentation, architecture document, demo account guide and .env.example files.
+Acceptance: all tests pass, no critical security issue remains, and every feature has been verified on the deployed version.
+5. Helper prompts
+Fix errors: Analyze the whole AAROGYA DRISHTI project and the terminal logs. Find the actual root cause of the error (frontend, backend, database or integration). Fix it without deleting working features or rewriting the project. Run the relevant tests, then tell me what caused it, which files changed, and how to verify.
+Add a new feature to the existing project: Act as a Senior Full-Stack Developer. First analyze my existing project structure, frontend, backend and database, and identify the correct place for the feature. Keep the existing UI and coding style. Do not create a separate demo app. Create the needed React components, Express APIs, Mongoose models, authentication and validation, connect everything, test it, and confirm existing modules still work. List every file created or modified. New feature: [write the feature name and what it should do].
+Final review: Review the whole application against the master requirements and all twelve phases. Produce a checklist of completed, partial and missing features, test every role and workflow, fix problems, and report. Never mark a feature complete based on UI alone.
+6. Completion checklist
+• MERN setup and health check
+• Interactive roadmap landing page
+• Seven roles with protected dashboards
+• Patient registration and unique ID
+• QR generation, scanning and consent
+• Oral image capture and upload
+• AI screening integration and doctor review
+• Telugu voice assistant
+• Electronic health records and prescriptions
+• Google Maps and referral management
+• Video consultation and appointments
+• Notifications and follow-ups
+• District analytics
+• Security, testing and deployment
+7. Tips for best results
+• Commit to Git after each phase so you can roll back.
+• If the AI output is cut off, reply 'continue from where you stopped' and name the file.
+• If something breaks, use the Fix errors prompt rather than asking for a rewrite.
+• Keep your API keys (Google Maps, speech, Cloudinary) ready before Phases 6, 7 and 9.
+• Use synthetic patient data throughout; real patient data needs legal and ethical approval.# AAROGYA DRISHTI: Master Prompt (AI Voice + Video Assistant)
+
+You are a senior MERN stack developer working on AAROGYA DRISHTI, an existing AI-assisted oral healthcare platform.
+
+**Existing stack:** React.js, Node.js, Express.js, MongoDB, JWT authentication, Gemini AI integration.
+
+## GLOBAL RULES (apply to every phase)
+
+- Do not rewrite the project. Do not delete existing code. Preserve all existing functionality.
+- Do not duplicate existing APIs, services, models or collections. Reuse the existing Gemini service and the existing models wherever possible.
+- Never expose API keys. Keep all keys (Gemini, TURN credentials, JWT secret) only on the backend and in environment variables.
+- Use the existing project architecture, folder structure, naming and coding style.
+- Do not claim to diagnose oral cancer or any disease. Do not recommend medicines without medical review. Recommend professional evaluation when appropriate.
+- Protect private patient information. Do not store audio or video recordings. Do not record calls without explicit consent.
+- Validate all inputs, add rate limits, and handle errors cleanly.
+- Never invent video URLs. Never display broken videos.
+- Report exact files modified and exact files created at the end of each phase.
+- Do not start a phase until the previous one is complete.
+
+---
+
+## PHASE 1: Project Analysis (report only, no implementation)
+
+Analyze the entire project first:
+
+1. Inspect frontend and backend folder structures.
+2. Identify existing routes, controllers, models and services.
+3. Identify the existing Gemini API integration.
+4. Inspect patient registration and login.
+5. Inspect patient and doctor dashboards.
+6. Check existing multilingual support (Telugu, English, Hindi).
+7. Identify reusable components.
+8. Check existing API endpoints and authentication middleware.
+9. Identify missing dependencies and configuration.
+10. Prepare an implementation plan for the AI Voice Assistant and AI Video Assistant.
+
+Deliver a complete analysis report with exact files to modify and new files to create. Stop and wait for approval.
+
+---
+
+## PHASE 2: Basic AI Voice Assistant
+
+**Frontend**
+1. Reusable `VoiceAssistant` React component.
+2. Floating microphone button on the right side of the app.
+3. Expandable voice assistant panel.
+4. Microphone start and stop controls.
+5. Live audio waveform while listening.
+6. Recognized speech shown as text.
+7. AI responses shown as chat messages.
+8. Telugu, English and Hindi language selection.
+9. Text-to-speech playback.
+10. Mute, replay and clear-conversation controls.
+11. Microphone permission and network error messages.
+
+**Backend**
+1. Reuse the existing Gemini API service.
+2. Create or reuse a voice assistant endpoint.
+3. Accept the user message and selected language.
+4. Return structured responses.
+5. Request validation and error handling.
+6. Protect private patient information.
+
+**Voice technologies:** Web Speech API for recognition where supported, SpeechSynthesis API for spoken responses, text-input fallback for unsupported browsers.
+
+**AI behavior:** answer oral healthcare questions; explain mouth ulcers, white patches, red patches and oral hygiene; explain precautions in simple language; recommend professional evaluation when appropriate; never claim to diagnose oral cancer from voice symptoms; no medicine recommendations without medical review.
+
+Test the complete feature.
+
+---
+
+## PHASE 3: Advanced Real-Time Conversational Assistant
+
+1. Natural two-way voice conversations.
+2. Telugu, English and Hindi support.
+3. Real-time audio input processing.
+4. Streaming AI responses using a supported Gemini streaming API.
+5. Natural voice output.
+6. User can interrupt AI speech.
+7. Stop previous speech when new user input arrives.
+8. Maintain conversation context.
+9. Live listening, thinking and speaking states.
+10. Conversation reset.
+11. Adjustable voice speed.
+12. Text and voice interaction modes.
+13. Automatic language selection with manual override.
+14. Accessible controls for elderly and low-literacy users.
+
+Integration: reuse the existing Gemini integration, keep API keys on the backend only, use a supported streaming API, no fake animations simulating real-time behavior, handle network interruptions and microphone permissions. Provide full frontend and backend implementation with tests.
+
+---
+
+## PHASE 4: Educational Video Module (separate from patient screening)
+
+**Categories:** Mouth Ulcers; Oral Cancer Awareness; White Patches; Red Patches; Oral Hygiene; Tongue Infections; Oral Health Symptoms; Precautions and Prevention; When to Visit a Doctor.
+
+**Requirements**
+1. Attractive category cards.
+2. Verified educational videos per category.
+3. Responsive video player.
+4. Play, pause, seek, volume, fullscreen.
+5. Telugu, English and Hindi subtitles where available.
+6. Language-based educational explanations.
+7. Title, description and duration.
+8. Related topics.
+9. Video search.
+10. Viewing history saved in MongoDB for authenticated users.
+11. Loading and error states.
+12. Mobile, tablet and desktop support.
+
+**Video source:** only verified educational sources or videos uploaded by authorized administrators. Include licensing and source attribution. Restrict uploads by type and size if uploads are supported.
+
+---
+
+## PHASE 5: AI Video Explanation Assistant
+
+1. AI explanation panel beside the video player.
+2. Explains the currently selected video topic.
+3. Questions by text or voice.
+4. Connects to the existing Gemini backend (no duplicate AI service).
+5. Telugu, English and Hindi explanations.
+6. Simple explanations for low-literacy users.
+7. Text-to-speech for explanations, with replay.
+8. Shows important symptoms and precautions.
+9. Related educational topics.
+
+Base answers only on verified video descriptions, trusted content, or verified transcripts. Do not pretend Gemini has watched a video unless real video input or transcripts are provided. No diagnoses. Encourage doctor consultation for concerning symptoms. Integrate with the existing Voice Assistant.
+
+---
+
+## PHASE 6: Doctor-Patient Live Video Consultation
+
+**Technologies:** WebRTC, Socket.IO signaling, Node/Express, MongoDB, existing JWT auth, TURN/STUN.
+
+**Patient:** view doctors; request or book a consultation; join an authorized room; toggle camera; toggle microphone; end consultation; view history.
+
+**Doctor:** view assigned appointments; accept or reject requests; join calls; view authorized screening reports; add consultation notes; recommend follow-ups; refer to specialists.
+
+**Call interface:** patient and doctor video, camera and microphone controls, end call, connection status, waiting room.
+
+**Security:** verify roles and JWT (including on the socket handshake); only authorized participants may join; secure signaling (WSS); TURN/STUN configured via environment variables; private rooms never exposed; no recording without explicit consent.
+
+Integrate with existing patient and doctor dashboards. Test with two separate authenticated browser sessions.
+
+---
+
+## PHASE 7: MongoDB Integration
+
+Create or reuse Mongoose models: VoiceConversation, VoiceMessage, EducationalVideo, VideoViewingHistory, DoctorAppointment, VideoConsultation, ConsultationNotes.
+
+- Link records to authenticated patient and doctor IDs.
+- Timestamps, validation, role-based access, protection from unauthorized access.
+- Do not save unnecessary audio or video recordings.
+- Indexes on frequently searched fields; pagination for history.
+- Compatible with existing patient records; no duplicate models or collections.
+- Deliver API documentation and MongoDB testing results.
+
+---
+
+## PHASE 8: Multilingual Support (Telugu, English, Hindi)
+
+1. Global language selection, persisted across the app.
+2. Translate Voice Assistant controls, AI responses, video descriptions, subtitles, and consultation controls.
+3. Voice input and output in all three languages, with a fallback when recognition does not support the selected language.
+4. Simple everyday language.
+5. Large buttons and accessible text, keyboard navigation, screen reader labels.
+6. Centralized translation system. No hardcoded translations inside components.
+
+---
+
+## PHASE 9: Integration Testing, Security and Final Report
+
+**Test:** basic voice I/O; advanced conversation; Telugu/English/Hindi; Gemini integration; video playback and subtitles; AI video explanation; WebRTC connection; Socket.IO signaling; JWT auth; patient/doctor authorization; MongoDB persistence; network disconnection; mobile and desktop responsiveness; existing registration/login; existing AI screening and patient history.
+
+**Security:** check API key exposure, validate inputs, add rate limits, protect patient records, prevent unauthorized consultation access, verify upload restrictions.
+
+Fix bugs without removing existing features.
+
+**Final report must contain:** changed files, API endpoints, environment variables, tests passed, remaining issues.

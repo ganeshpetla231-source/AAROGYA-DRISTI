@@ -1,0 +1,71 @@
+body {
+  font-family: var(--font-body) !important;
+  font-size: var(--text-base) !important;
+  line-height: var(--line-body) !important;
+}
+
+body :is(h1, h2, h3, h4) {
+  font-family: var(--font-display) !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--line-heading) !important;
+}
+
+body h1 {
+  font-size: var(--text-2xl) !important;
+}
+
+body h2 {
+  font-size: var(--text-xl) !important;
+}
+
+body :is(h3, h4) {
+  font-size: var(--text-lg) !important;
+}
+
+body :is(p, li, dd, dt, blockquote) {
+  font-size: var(--text-base) !important;
+  line-height: var(--line-body) !important;
+}
+
+body :is(small, .muted, .text-muted, .helper-text, .form-hint, .field-hint, .caption, .eyebrow, .section-overline, .section-kicker, .page-kicker, .status-tag, .status-pill, .badge, .chip, .timestamp, .time-ago, .stat-label, .stat-note) {
+  font-size: var(--text-xs) !important;
+  line-height: 1.45 !important;
+}
+
+body label,
+body legend {
+  font-size: var(--text-label) !important;
+  line-height: 1.4 !important;
+}
+
+body :is(input, select, textarea) {
+  font-family: var(--font-body) !important;
+  font-size: var(--text-base) !important;
+  line-height: 1.4 !important;
+}
+
+body :is(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], .button, .btn) {
+  font-family: var(--font-body) !important;
+  font-size: var(--text-button) !important;
+  line-height: 1.35 !important;
+}
+
+body th {
+  font-size: var(--text-sm) !important;
+  line-height: 1.45 !important;
+}
+
+body td {
+  font-size: var(--text-base) !important;
+  line-height: 1.45 !important;
+}
+
+body :is(.sidebar nav a, .sidebar nav button, .admin-section-tabs button, .marketing-nav-links a, .topbar nav a) {
+  font-size: var(--text-nav) !important;
+  line-height: 1.35 !important;
+}
+
+body :is(p, li, td, th, label, button, a) {
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,146 @@
+.admin-overview {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-overview-heading,
+.admin-overview-heading > div,
+.admin-system-monitor > header,
+.admin-appointment-monitor > header {
+  display: flex;
+  align-items: center;
+}
+
+.admin-overview-heading {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-overview-heading > div {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-overview-heading h2,
+.admin-system-monitor h3,
+.admin-appointment-monitor h3,
+.admin-overview-activity h3 {
+  margin: 0;
+  color: #15344d;
+}
+
+.admin-overview-heading p,
+.admin-system-monitor header p,
+.admin-appointment-monitor header p,
+.admin-overview-activity .role-dashboard-heading p {
+  margin: 0;
+  color: #61778c;
+}
+
+.admin-overview-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+}
+
+.admin-overview-stat {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 3px 10px;
+  padding: 16px;
+  border: 1px solid #dce5ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admin-overview-stat-icon,
+.admin-overview-panel-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  color: #176fa4;
+  background: #e8f4fc;
+}
+
+.admin-overview-stat > span:nth-child(2) {
+  color: #526a7f;
+  font-size: 13px;
+}
+
+.admin-overview-stat strong {
+  grid-column: 2;
+  color: #102d45;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-system-monitor > header,
+.admin-appointment-monitor > header {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.admin-system-monitor header > div,
+.admin-appointment-monitor header > div {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-system-monitor dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-system-monitor dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e8eef4;
+}
+
+.admin-system-monitor dt {
+  color: #61778c;
+}
+
+.admin-system-monitor dd {
+  margin: 0;
+  color: #15344d;
+  font-weight: 650;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.admin-system-monitor dd.is-healthy {
+  color: #16834a;
+}
+
+.admin-system-monitor dd.is-unavailable {
+  color: #b42332;
+}
+
+.admin-appointment-monitor .text-link {
+  margin-top: 10px;
+}
+
+.admin-overview-activity .role-dashboard-heading {
+  align-items: flex-start;
+}
+
+@media (max-width: 760px) {
+  .admin-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,22 @@
+const express = require('express');
+const multer = require('multer');
+const { authenticate, authorize } = require('../middleware/authMiddleware');
+const ApiError = require('../utils/ApiError');
+const controller = require('../controllers/clinicalController');
+const { expensiveLimiter } = require('../middleware/rateLimits');
+const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 }, fileFilter: (req, file, done) => {
+  if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.mimetype)) return done(new ApiError(415, 'Upload a PDF, JPEG, or PNG lab report'));
+  done(null, true);
+} });
+router.use(authenticate, authorize('doctor'));
+router.get('/patients', controller.queue);
+router.get('/patients/:patientKey', controller.detail);
+router.post('/patients/:patientKey/notes', controller.note);
+router.post('/patients/:patientKey/prescriptions', controller.prescribe);
+router.post('/patients/:patientKey/follow-ups', controller.followup);
+router.post('/patients/:patientKey/referrals', controller.referral);
+router.post('/patients/:patientKey/lab-reports', expensiveLimiter, upload.single('report'), controller.uploadDocument);
+router.patch('/prescriptions/:id', controller.updatePrescription);
+router.get('/documents/:id', controller.downloadDocument);
+module.exports = router;

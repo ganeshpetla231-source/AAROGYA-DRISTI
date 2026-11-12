@@ -1,0 +1,290 @@
+.reviewing-clinician {
+  display: grid;
+  gap: 1rem;
+}
+
+.reviewing-clinician-disclaimer {
+  padding: .9rem 1rem;
+  border: 1px solid #e8d6a5;
+  border-left: 4px solid #c38b1c;
+  border-radius: 9px;
+  color: #5b4b28;
+  background: #fff9e9;
+  line-height: 1.55;
+}
+
+.reviewing-clinician-filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(3, minmax(135px, 1fr)) auto;
+  gap: .75rem;
+  align-items: end;
+  padding: 1rem;
+  border: 1px solid #dce7ee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.reviewing-clinician-filters label,
+.reviewing-clinician-form label {
+  display: grid;
+  gap: .4rem;
+  color: #244761;
+  font-weight: 650;
+}
+
+.reviewing-clinician-filters input,
+.reviewing-clinician-filters select,
+.reviewing-clinician-form input,
+.reviewing-clinician-form select,
+.reviewing-clinician-form textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: .6rem .7rem;
+  border: 1px solid #c8d7e2;
+  border-radius: 8px;
+  color: #17324d;
+  background: #fff;
+}
+
+.reviewing-clinician-form textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.reviewing-clinician-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.reviewing-clinician-card {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.4rem);
+  border: 1px solid #dce7ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(22, 57, 84, .06);
+}
+
+.reviewing-clinician-patient {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid #e3ebf0;
+}
+
+.reviewing-clinician-patient h2 {
+  margin: .25rem 0;
+  color: #173f5e;
+  font-size: 1.25rem;
+}
+
+.reviewing-clinician-patient p {
+  margin: .25rem 0;
+  color: #536b7d;
+  line-height: 1.5;
+}
+
+.reviewing-clinician-evidence {
+  display: grid;
+  grid-template-columns: minmax(220px, .9fr) minmax(0, 1.1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.reviewing-clinician-image-button {
+  position: relative;
+  display: grid;
+  gap: .45rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: #176f9c;
+  background: transparent;
+  text-align: left;
+  cursor: zoom-in;
+}
+
+.reviewing-clinician-image {
+  width: 100%;
+  max-height: 350px;
+  aspect-ratio: 4 / 3;
+  border: 1px solid #d4e1e9;
+  border-radius: 11px;
+  background: #f1f5f8;
+  object-fit: contain;
+}
+
+.reviewing-clinician-ai {
+  display: grid;
+  gap: .55rem;
+  padding: 1rem;
+  border: 1px solid #dce7ee;
+  border-radius: 11px;
+  background: #f7fafc;
+}
+
+.reviewing-clinician-ai h3,
+.reviewing-clinician-history h3 {
+  margin: 0;
+  color: #173f5e;
+}
+
+.reviewing-clinician-ai p {
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.reviewing-clinician-ai small {
+  color: #607588;
+}
+
+.reviewing-clinician-ai .reviewing-clinician-disclaimer {
+  padding: .65rem .75rem;
+  font-size: .92rem;
+}
+
+.reviewing-clinician-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .85rem;
+  padding-top: .25rem;
+}
+
+.reviewing-clinician-form label:nth-child(2),
+.reviewing-clinician-form label:nth-child(3),
+.reviewing-clinician-form label:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+.reviewing-clinician-history {
+  display: grid;
+  gap: .6rem;
+  padding: .9rem 1rem;
+  border-radius: 10px;
+  background: #f6f9fb;
+}
+
+.reviewing-clinician-history article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .3rem .8rem;
+  padding-top: .65rem;
+  border-top: 1px solid #e0e9ef;
+}
+
+.reviewing-clinician-history article p {
+  grid-column: 1 / -1;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.reviewing-clinician-history article time,
+.reviewing-clinician-history article span {
+  color: #627789;
+  font-size: .9rem;
+}
+
+.reviewing-clinician-history article time {
+  text-align: right;
+}
+
+.reviewing-clinician-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
+.reviewing-clinician-actions .auth-submit,
+.reviewing-clinician-reject,
+.reviewing-clinician-actions .date-chip {
+  min-height: 44px;
+}
+
+.reviewing-clinician-reject {
+  padding: .65rem 1rem;
+  border: 1px solid #b94747;
+  border-radius: 8px;
+  color: #9c3434;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reviewing-clinician-reject:disabled,
+.reviewing-clinician-actions button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.reviewing-clinician-lightbox {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  padding: 4rem 1rem 1rem;
+  place-items: center;
+  background: rgba(5, 17, 28, .92);
+  cursor: zoom-out;
+}
+
+.reviewing-clinician-lightbox img {
+  max-width: min(96vw, 1500px);
+  max-height: calc(100vh - 6rem);
+  object-fit: contain;
+}
+
+.reviewing-clinician-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  min-height: 44px;
+  padding: .6rem 1rem;
+  border: 1px solid #fff;
+  border-radius: 8px;
+  color: #fff;
+  background: #17324d;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .reviewing-clinician-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .reviewing-clinician-filters,
+  .reviewing-clinician-evidence,
+  .reviewing-clinician-form {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewing-clinician-form label:nth-child(n) {
+    grid-column: auto;
+  }
+
+  .reviewing-clinician-patient {
+    flex-direction: column;
+  }
+
+  .reviewing-clinician-history article {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewing-clinician-history article time,
+  .reviewing-clinician-history article p {
+    grid-column: 1;
+    text-align: left;
+  }
+
+  .reviewing-clinician-actions {
+    display: grid;
+  }
+}

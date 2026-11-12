@@ -1,0 +1,13 @@
+export const roadmapTopics = [
+  { title: 'Project Planning and Architecture', color: '#b28aff', description: 'The foundation for a connected, community-first healthcare platform.', features: ['Monorepo and service architecture', 'Frontend, API and AI service foundations', 'Environment-based configuration'] },
+  { title: 'Frontend UI Design', color: '#55a9ff', description: 'A responsive, accessible experience for every community and care team.', features: ['Responsive dashboards', 'English and Telugu interface', 'Role-aware navigation'] },
+  { title: 'Backend and MongoDB', color: '#53dda5', description: 'Reliable APIs and data models that support the care journey.', features: ['REST API structure', 'MongoDB data persistence', 'Validation and error handling'] },
+  { title: 'Authentication and Roles', color: '#ffad62', description: 'Secure access designed around the responsibilities of each care role.', features: ['Seven user roles', 'Role-based permissions', 'Protected application areas'] },
+  { title: 'Patient QR Code System', color: '#42d9d0', description: 'A simple way to identify a patient and find their authorized care record.', features: ['Patient identification', 'Consent-aware access', 'Revocable QR tokens'] },
+  { title: 'AI Detection', color: '#a68bff', description: 'Screening support that helps teams prioritize cases for clinical review.', features: ['Oral image screening workflow', 'Image quality guidance', 'Doctor review and limitations'] },
+  { title: 'Doctor Dashboard', color: '#59b9ff', description: 'A focused workspace for reviewing cases and coordinating patient care.', features: ['Patient queue and records', 'Clinical review workflow', 'Treatment and follow-up'] },
+  { title: 'Maps and Navigation', color: '#7bd78c', description: 'Help people find appropriate local care and complete referrals.', features: ['Facility discovery', 'Referral coordination', 'Directions and contact details'] },
+  { title: 'Telemedicine and Appointments', color: '#ffad62', description: 'Connect patients and clinicians for remote consultations and follow-up.', features: ['Appointment scheduling', 'Remote consultation', 'Follow-up planning'] },
+  { title: 'Notifications and Analytics', color: '#58d1dc', description: 'Keep care teams informed and show program progress through useful metrics.', features: ['Care journey updates', 'Screening and referral metrics', 'Facility-level insights'] },
+  { title: 'Security and Deployment', color: '#f17f91', description: 'Prepare the platform for secure, dependable operation.', features: ['Access and input safeguards', 'Audit and privacy practices', 'Production deployment readiness'] }
+];
