@@ -16,6 +16,17 @@ function assertAdmin(user) {
   if (user?.role !== 'admin') throw new ApiError(403, 'Administrator access is required for doctor credential management');
 }
 
+function logDocumentUploadFailure(stage, error) {
+  const details = {
+    stage,
+    errorName: error?.name || 'Error'
+  };
+  if (error?.code !== undefined) details.errorCode = String(error.code).slice(0, 40);
+  if (error?.http_code !== undefined) details.providerHttpCode = Number(error.http_code) || undefined;
+  if (error?.name === 'ValidationError') details.validationFields = Object.keys(error.errors || {}).slice(0, 10);
+  console.error('Professional document upload failed', details);
+}
+
 function encrypt(bytes) {
   const configured = process.env.SCREENING_IMAGE_ENCRYPTION_KEY;
   if (process.env.NODE_ENV === 'production' && (!configured || configured.length < 32)) {
@@ -24,7 +35,8 @@ function encrypt(bytes) {
   const key = crypto.createHash('sha256').update(configured || 'local-development-screening-image-key-only').digest();
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-  return Buffer.concat([Buffer.from('ADPRF1'), iv, cipher.getAuthTag(), cipher.update(bytes), cipher.final()]);
+  const ciphertext = Buffer.concat([cipher.update(bytes), cipher.final()]);
+  return Buffer.concat([Buffer.from('ADPRF1'), iv, cipher.getAuthTag(), ciphertext]);
 }
 
 function decrypt(bytes) {
@@ -190,17 +202,39 @@ async function uploadDocument(doctorId, file, body, user) {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   if (!title || title.length > 160) throw new ApiError(400, 'Enter a document title up to 160 characters');
   const storageKey = `${crypto.randomUUID()}.enc`;
-  await fileStorage.put(storageKey, encrypt(file.buffer));
+  let stage = 'encryption';
+  let storageAttempted = false;
+  let item;
   try {
-    const item = await ProfessionalDocument.create({
+    const encryptedFile = encrypt(file.buffer);
+    stage = 'storage';
+    storageAttempted = true;
+    await fileStorage.put(storageKey, encryptedFile);
+    stage = 'document-record';
+    item = await ProfessionalDocument.create({
       doctor: doctor._id, hospital: doctor.hospital, uploadedBy: user._id,
       documentType, title, storageKey, mimeType: file.mimetype,
       sha256: crypto.createHash('sha256').update(file.buffer).digest('hex'), byteLength: file.size
     });
+    stage = 'audit-log';
     await AuditLog.create({ actor: user._id, action: 'admin.doctor_document_uploaded', resourceType: 'ProfessionalDocument', resourceId: item._id, metadata: { doctor: doctor._id, documentType } });
     return safeDocument(item);
   } catch (error) {
-    await fileStorage.remove(storageKey).catch(() => {});
+    if (item) {
+      try {
+        await ProfessionalDocument.deleteOne({ _id: item._id });
+      } catch (cleanupError) {
+        logDocumentUploadFailure('document-record-cleanup', cleanupError);
+      }
+    }
+    if (storageAttempted) {
+      try {
+        await fileStorage.remove(storageKey);
+      } catch (cleanupError) {
+        logDocumentUploadFailure('storage-cleanup', cleanupError);
+      }
+    }
+    logDocumentUploadFailure(stage, error);
     throw error;
   }
 }

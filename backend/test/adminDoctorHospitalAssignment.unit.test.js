@@ -1,11 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const admin = require('../src/services/adminService');
 const auth = require('../src/services/authService');
 const facility = require('../src/services/facilityService');
-const { Hospital, User, AuditLog, DoctorAvailability, RefreshSession } = require('../src/models');
+const fileStorage = require('../src/services/fileStorageService');
+const { Hospital, User, AuditLog, DoctorAvailability, RefreshSession, ProfessionalDocument } = require('../src/models');
 
 function query(value) {
   return {
@@ -261,5 +263,125 @@ test('approved active hospital-created doctors can sign in before professional v
     User.findOne = originalUserFindOne;
     bcrypt.compare = originalPasswordCompare;
     RefreshSession.create = originalSessionCreate;
+  }
+});
+
+test('failed credential audit rolls back the document and logs only safe failure metadata', async () => {
+  const doctorId = new mongoose.Types.ObjectId();
+  const hospitalId = new mongoose.Types.ObjectId();
+  const documentId = new mongoose.Types.ObjectId();
+  const original = {
+    userFindOne: User.findOne,
+    hospitalExists: Hospital.exists,
+    documentCreate: ProfessionalDocument.create,
+    documentDelete: ProfessionalDocument.deleteOne,
+    auditCreate: AuditLog.create,
+    storagePut: fileStorage.put,
+    storageRemove: fileStorage.remove,
+    consoleError: console.error,
+    encryptionKey: process.env.SCREENING_IMAGE_ENCRYPTION_KEY
+  };
+  let removed = false;
+  let deleted = false;
+  const logs = [];
+  User.findOne = () => query({ _id: doctorId, hospital: hospitalId });
+  Hospital.exists = async () => true;
+  ProfessionalDocument.create = async () => ({
+    _id: documentId,
+    toObject: () => ({ _id: documentId })
+  });
+  ProfessionalDocument.deleteOne = async filter => {
+    assert.equal(String(filter._id), String(documentId));
+    deleted = true;
+  };
+  AuditLog.create = async () => { throw Object.assign(new Error('audit write failed'), { code: 91 }); };
+  fileStorage.put = async () => {};
+  fileStorage.remove = async () => { removed = true; };
+  console.error = (...args) => logs.push(args);
+  process.env.SCREENING_IMAGE_ENCRYPTION_KEY = 'test-professional-document-encryption-key';
+
+  try {
+    await assert.rejects(facility.uploadDocument(
+      String(doctorId),
+      { buffer: Buffer.from('%PDF-test'), mimetype: 'application/pdf', size: 9 },
+      { documentType: 'qualification', title: 'Private qualification title' },
+      { _id: new mongoose.Types.ObjectId(), role: 'admin' }
+    ), /audit write failed/);
+    assert.equal(deleted, true);
+    assert.equal(removed, true);
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0][1].stage, 'audit-log');
+    assert.equal(logs[0][1].errorCode, '91');
+    assert.doesNotMatch(JSON.stringify(logs), /Private qualification title/);
+  } finally {
+    User.findOne = original.userFindOne;
+    Hospital.exists = original.hospitalExists;
+    ProfessionalDocument.create = original.documentCreate;
+    ProfessionalDocument.deleteOne = original.documentDelete;
+    AuditLog.create = original.auditCreate;
+    fileStorage.put = original.storagePut;
+    fileStorage.remove = original.storageRemove;
+    console.error = original.consoleError;
+    if (original.encryptionKey === undefined) delete process.env.SCREENING_IMAGE_ENCRYPTION_KEY;
+    else process.env.SCREENING_IMAGE_ENCRYPTION_KEY = original.encryptionKey;
+  }
+});
+
+test('professional document upload encrypts the file and returns safe metadata', async () => {
+  const doctorId = new mongoose.Types.ObjectId();
+  const hospitalId = new mongoose.Types.ObjectId();
+  const documentId = new mongoose.Types.ObjectId();
+  const original = {
+    userFindOne: User.findOne,
+    hospitalExists: Hospital.exists,
+    documentCreate: ProfessionalDocument.create,
+    auditCreate: AuditLog.create,
+    storagePut: fileStorage.put,
+    storageRemove: fileStorage.remove,
+    encryptionKey: process.env.SCREENING_IMAGE_ENCRYPTION_KEY
+  };
+  const fileBytes = Buffer.from('%PDF-test-document');
+  const key = 'test-professional-document-encryption-key';
+  let storedBytes;
+  let removed = false;
+  User.findOne = () => query({ _id: doctorId, hospital: hospitalId });
+  Hospital.exists = async () => true;
+  ProfessionalDocument.create = async data => ({
+    _id: documentId,
+    toObject: () => ({ _id: documentId, ...data })
+  });
+  AuditLog.create = async () => ({});
+  fileStorage.put = async (storageKey, bytes) => { storedBytes = Buffer.from(bytes); };
+  fileStorage.remove = async () => { removed = true; };
+  process.env.SCREENING_IMAGE_ENCRYPTION_KEY = key;
+
+  try {
+    const result = await facility.uploadDocument(
+      String(doctorId),
+      { buffer: fileBytes, mimetype: 'application/pdf', size: fileBytes.length },
+      { documentType: 'qualification', title: 'Qualification proof' },
+      { _id: new mongoose.Types.ObjectId(), role: 'admin' }
+    );
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      crypto.createHash('sha256').update(key).digest(),
+      storedBytes.subarray(6, 18)
+    );
+    decipher.setAuthTag(storedBytes.subarray(18, 34));
+    const decrypted = Buffer.concat([decipher.update(storedBytes.subarray(34)), decipher.final()]);
+    assert.deepEqual(decrypted, fileBytes);
+    assert.equal(result._id, documentId);
+    assert.equal(Object.hasOwn(result, 'storageKey'), false);
+    assert.equal(Object.hasOwn(result, 'sha256'), false);
+    assert.equal(removed, false);
+  } finally {
+    User.findOne = original.userFindOne;
+    Hospital.exists = original.hospitalExists;
+    ProfessionalDocument.create = original.documentCreate;
+    AuditLog.create = original.auditCreate;
+    fileStorage.put = original.storagePut;
+    fileStorage.remove = original.storageRemove;
+    if (original.encryptionKey === undefined) delete process.env.SCREENING_IMAGE_ENCRYPTION_KEY;
+    else process.env.SCREENING_IMAGE_ENCRYPTION_KEY = original.encryptionKey;
   }
 });
