@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, BarChart3, Bell, BookOpen, Building2, CalendarDays, CalendarPlus, Check, ClipboardCheck, ChevronDown,
   ChevronRight, Clock3, Eye, EyeOff, FolderHeart, GitBranch, HeartPulse, Hospital, LayoutDashboard, QrCode,
@@ -40,6 +40,7 @@ import { AdminOverview } from './AdminOverview.jsx';
 import { AdminReferrals } from './AdminReferrals.jsx';
 import { AdminNotifications } from './AdminNotifications.jsx';
 import { saveOfflinePatientDraft } from '../services/offlineStorage.js';
+import './auth-layout.css';
 import './authPassword.css';
 import './overview.css';
 import './doctor-profile.css';
@@ -254,17 +255,25 @@ function Auth({ auth, initialMode, onAuthenticated, onHome, t }) {
   return (
     <main className="auth-page auth-page-split">
       <div className="auth-glow"/>
-      <header className="auth-top">
-        <button className="back-home" onClick={onHome}>← <span>Aarogya <b>Drishti</b></span></button>
-        <LanguageSelector className="lang-toggle dash-lang"/>
-      </header>
       <div className="auth-layout">
+      <aside className="auth-brand-panel">
+        <div className="auth-brand-top"><button className="back-home" onClick={onHome}>← {translate('auth.backHome')}</button></div>
+        <div className="auth-brand-message"><h2>Aarogyadrishti</h2><p>{translate('auth.brandTagline')}</p></div>
+        <div className="auth-hero-art">
+          <img src="/images/dashboard/login-healthcare-illustration.png" alt={translate('auth.healthcareIllustrationAlt')}/>
+        </div>
+        <div className="auth-trust-row">
+          <span><ShieldCheck size={18} aria-hidden="true"/>{translate('auth.trustSecure')}</span>
+          <span><Shield size={18} aria-hidden="true"/>{translate('auth.trustPrivate')}</span>
+          <span><HeartPulse size={18} aria-hidden="true"/>{translate('auth.trustCare')}</span>
+        </div>
+      </aside>
       <section className="auth-card">
-        <div className="auth-symbol">✦</div>
+        <div className="auth-card-brand"><span><Eye size={22} aria-hidden="true"/></span><b>Aarogyadrishti</b><LanguageSelector className="lang-toggle dash-lang auth-card-language"/></div>
         <p className="demo-label">{translate('auth.secureAccess')}</p>
         <h1>{register ? translate('auth.register') : reset ? translate('auth.resetTitle') : mode === 'forgot' ? translate('auth.forgotTitle') : t.login}</h1>
         <p className="auth-intro">{register ? translate('auth.registerIntro') : translate('auth.loginIntro')}</p>
-        {auth.sessionStatus && <p className="form-error" role="alert">{translate(`auth.session${auth.sessionStatus === 'expired' ? 'Expired' : 'Unavailable'}`)}</p>}
+        {auth.sessionStatus && <p className="auth-session-alert" role="alert">{translate(`auth.session${auth.sessionStatus === 'expired' ? 'Expired' : 'Unavailable'}`)}</p>}
         {message && <p className="api-success" role="status">{message}</p>}
         {resetToken && <p className="reset-token">{translate('auth.developmentToken')} <code>{resetToken}</code></p>}
         {mode === 'login' && <div className="auth-switch-group" role="group" aria-label={translate('auth.loginMethod')}>
@@ -354,10 +363,12 @@ function Auth({ auth, initialMode, onAuthenticated, onHome, t }) {
         </form>
         {mode === 'login' && loginType !== 'patient' && <button className="auth-switch" onClick={() => changeMode('forgot')}>{translate('auth.forgotPassword')}</button>}
         {mode !== 'login' && <button className="auth-switch" onClick={() => changeMode('login')}>{translate('auth.backToLogin')}</button>}
-        {mode === 'login' && <button className="auth-switch" onClick={() => changeMode('register')}>{t.signUp}</button>}
-        <p className="auth-footnote">{translate('auth.secureSession')}</p>
+        {mode === 'login' && <button className="auth-switch auth-register-link" onClick={() => changeMode('register')}>{t.signUp}</button>}
+        <footer className="auth-card-footer">
+          <p className="auth-footnote">{translate('auth.secureSession')}</p>
+          <Link to="/appointment">{translate('auth.bookAppointment')} →</Link>
+        </footer>
       </section>
-      <aside className="auth-photo-panel"><img src="/images/dashboard/action-consult.png" alt="A clinician listening to a patient"/><div className="auth-photo-shade"/><div className="auth-photo-copy"><span className="auth-photo-badge"><ShieldCheck size={14}/> PRIVATE, CONNECTED CARE</span><h2>A healthier smile<br/>starts with <em>feeling cared for.</em></h2><p>Find trusted support for your oral health journey.</p></div></aside>
       </div>
     </main>
   );

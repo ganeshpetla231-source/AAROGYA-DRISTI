@@ -15,8 +15,8 @@
   --teal-dark: var(--navy);
   --lime: var(--deep-green);
   --shadow: 0 12px 28px rgba(16, 42, 67, 0.08);
-  --font-body: Inter, "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: Inter, "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: Inter, "Noto Sans Telugu", "Noto Sans Devanagari", "Nirmala UI", "Gautami", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-body);
   --glass-surface: rgba(255, 255, 255, 0.96);
   --glass-blur: 12px;
   --space-1: 4px;
@@ -25,15 +25,15 @@
   --space-4: 24px;
   --space-5: 32px;
   --space-6: 64px;
-  --text-xs: 13px;
-  --text-sm: 14px;
-  --text-base: 16px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
   --text-lg: 18px;
-  --text-xl: clamp(20px, 1.8vw, 22px);
-  --text-2xl: clamp(24px, 2.2vw, 26px);
-  --text-nav: 15px;
-  --text-button: 15px;
-  --text-label: 14px;
+  --text-xl: clamp(21px, 1.9vw, 25px);
+  --text-2xl: clamp(30px, 3vw, 40px);
+  --text-nav: 13px;
+  --text-button: 14px;
+  --text-label: 13px;
   --line-body: 1.55;
   --line-heading: 1.25;
   --radius-card: 16px;
@@ -312,7 +312,7 @@ textarea {
   @media (prefers-reduced-motion: no-preference) {
     .service-card,
     .team-card,
-    .pricing-card,
+    .care-option-card,
     .bento-card {
       animation: care-card-enter linear both;
       animation-timeline: view();
