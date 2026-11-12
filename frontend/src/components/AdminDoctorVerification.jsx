@@ -59,6 +59,11 @@ export function AdminDoctorVerification({ onChanged }) {
   const hasVerifiedRegistration = documents.some(item => item.documentType === 'medical-registration' && item.verificationStatus === 'verified');
   const profileComplete = Boolean(profile.registrationNumber && profile.qualifications?.length);
   const canVerify = Boolean(doctor && !profile.profileVerifiedAt && profileComplete && hasVerifiedQualification && hasVerifiedRegistration);
+  const approvalLabel = doctor?.approvalStatus === 'approved'
+    ? t('adminDashboard.approvalApproved')
+    : doctor?.approvalStatus === 'rejected'
+      ? t('adminDashboard.approvalRejected')
+      : t('adminDashboard.approvalPending');
 
   async function perform(action, message, refreshAdmin = false) {
     setBusy(true);
@@ -156,8 +161,10 @@ export function AdminDoctorVerification({ onChanged }) {
         </select>
       </label>
       {doctor && <>
-        <p>{t('adminDashboard.doctorHospital')}: {doctor.hospital?.name || t('adminDashboard.notAssigned')} · {t('adminDashboard.accountStatus')}: {doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')}</p>
+        <p>{t('adminDashboard.doctorHospital')}: {doctor.hospital?.name || t('adminDashboard.notAssigned')} · {t('adminDashboard.accountStatus')}: {doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')} · {t('adminDashboard.approvalStatus')}: {approvalLabel}</p>
         {!doctor.hospital && <p className="role-dashboard-error">{t('adminDashboard.assignHospitalBeforeCredentials')}</p>}
+        {(!doctor.isActive || doctor.approvalStatus !== 'approved') && <p className="role-dashboard-error">{t('adminDashboard.slotAccountNotReady')}</p>}
+        {!doctor.hospital && <p className="role-dashboard-error">{t('adminDashboard.slotHospitalRequired')}</p>}
         <p>
           {t('adminDashboard.professionalVerification')}: {profile.profileVerifiedAt ? t('adminDashboard.verified') : t('adminDashboard.verificationRequired')}
         </p>
@@ -226,6 +233,7 @@ export function AdminDoctorVerification({ onChanged }) {
         </form>
         <div className="facility-item">
           <strong>{t('facility.doctors')}</strong>
+          <p>{t('adminDashboard.documentDownloadHelp')}</p>
           {documents.length ? documents.map(document => <div key={document._id}>
             {document.title} ({t(`facility.documentTypes.${document.documentType}`)}) — {t(`facility.documentStatuses.${document.verificationStatus}`)}
             <button type="button" disabled={busy} onClick={() => download(document)}>{t('facility.viewDocument')}</button>
@@ -233,7 +241,7 @@ export function AdminDoctorVerification({ onChanged }) {
               <button type="button" disabled={busy} onClick={() => perform(
                 () => verifyProfessionalDocument(document._id, 'verified'),
                 t('facility.documentVerified')
-              )}>{t('facility.verify')}</button>
+              )}>{t('adminDashboard.verifyDocument')}</button>
               <button type="button" disabled={busy} onClick={() => perform(
                 () => verifyProfessionalDocument(document._id, 'rejected'),
                 t('facility.documentRejected')
@@ -242,7 +250,8 @@ export function AdminDoctorVerification({ onChanged }) {
           </div>) : <p>{t('adminDashboard.noCredentialDocuments')}</p>}
           {profile.profileVerifiedAt ? <p>{t('adminDashboard.verified')}</p> : <>
             {!profileComplete && <p>{t('adminDashboard.profileIncomplete')}</p>}
-            {(!hasVerifiedQualification || !hasVerifiedRegistration) && <p>{t('adminDashboard.requiredDocumentsMissing')}</p>}
+            {!hasVerifiedQualification && <p>{t('adminDashboard.qualificationDocumentRequired')}</p>}
+            {!hasVerifiedRegistration && <p>{t('adminDashboard.registrationDocumentRequired')}</p>}
             <button type="button" className="role-dashboard-primary" disabled={busy || !canVerify}
               onClick={() => perform(
                 () => verifyFacilityDoctor(doctor._id),
