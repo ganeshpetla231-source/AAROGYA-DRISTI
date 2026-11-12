@@ -166,13 +166,19 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
   async function assignHospital(doctor, hospitalId) {
     if (!hospitalId) return;
     const hospital = hospitals.find(item => item._id === hospitalId);
-    if (!hospital || !window.confirm(t('adminDashboard.confirmAssignDoctor', { name: doctor.name, hospital: hospital.name }))) return;
+    const currentHospitalId = doctor.hospital?._id || '';
+    const isReassignment = Boolean(currentHospitalId && currentHospitalId !== hospitalId);
+    const confirmation = isReassignment ? 'adminDashboard.confirmMoveDoctor' : 'adminDashboard.confirmAssignDoctor';
+    if (!hospital || !window.confirm(t(confirmation, { name: doctor.name, hospital: hospital.name }))) return;
     setBusyId(doctor._id);
     setError('');
     setNotice('');
     try {
       await assignAdminDoctorHospital(doctor._id, hospitalId);
-      setNotice(t('adminDashboard.doctorHospitalAssigned', { name: doctor.name, hospital: hospital.name }));
+      setNotice(t(isReassignment ? 'adminDashboard.doctorHospitalMoved' : 'adminDashboard.doctorHospitalAssigned', {
+        name: doctor.name,
+        hospital: hospital.name
+      }));
       await load();
     } catch (failure) {
       setError(failure.message);
@@ -254,12 +260,14 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
         <thead><tr><th>{t('adminDashboard.name')}</th><th>{t('adminDashboard.staffId')}</th><th>{t('adminDashboard.email')}</th><th>{t('adminDashboard.district')}</th><th>{t('adminDashboard.doctorHospital')}</th><th>{t('adminDashboard.professionalVerification')}</th><th>{t('adminDashboard.accountStatus')}</th></tr></thead>
         <tbody>{approvedDoctors.map(doctor => <tr key={doctor._id}>
           <td>{doctor.name}</td><td>{doctor.staffId || '—'}</td><td>{doctor.email}</td><td>{doctor.district || '—'}</td>
-          <td>{doctor.hospital?.name || <select aria-label={t('adminDashboard.assignHospitalTo', { name: doctor.name })}
-            value="" disabled={busyId === doctor._id || !hospitals.length}
+          <td><select aria-label={t('adminDashboard.assignHospitalTo', { name: doctor.name })}
+            value={doctor.hospital?._id || ''} disabled={busyId === doctor._id || !hospitals.length}
             onChange={event => assignHospital(doctor, event.target.value)}>
             <option value="">{hospitals.length ? t('adminDashboard.assignHospital') : t('adminDashboard.noActiveHospitals')}</option>
+            {doctor.hospital && !hospitals.some(hospital => hospital._id === doctor.hospital._id) &&
+              <option value={doctor.hospital._id}>{doctor.hospital.name} ({t('adminDashboard.inactive')})</option>}
             {hospitals.map(hospital => <option key={hospital._id} value={hospital._id}>{hospital.name}</option>)}
-          </select>}</td>
+          </select></td>
           <td>{doctor.profileVerified ? t('adminDashboard.verified') : doctor.hospital ? t('adminDashboard.verificationRequired') : t('adminDashboard.notAssigned')}</td>
           <td>{doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')}</td>
         </tr>)}</tbody>

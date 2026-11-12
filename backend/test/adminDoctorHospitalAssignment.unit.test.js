@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
 const admin = require('../src/services/adminService');
-const { Hospital, User, AuditLog } = require('../src/models');
+const { Hospital, User, AuditLog, DoctorAvailability } = require('../src/models');
 
 function query(value) {
   return {
@@ -27,12 +27,19 @@ test('assigning an active doctor to a hospital leaves professional verification 
   const hospitalId = new mongoose.Types.ObjectId();
   const hospital = { _id: hospitalId, name: 'District Hospital', hospitalId: 'H-001' };
   const originalHospitalFindOne = Hospital.findOne;
+  const originalUserFindOne = User.findOne;
   const originalUserFindOneAndUpdate = User.findOneAndUpdate;
   const originalAuditCreate = AuditLog.create;
   let update;
   let audit;
 
   Hospital.findOne = () => query(hospital);
+  User.findOne = () => query({
+    approvalStatus: 'approved',
+    isActive: true,
+    hospital: null,
+    doctorProfile: { profileVerifiedAt: new Date() }
+  });
   User.findOneAndUpdate = (filter, changes) => {
     assert.equal(String(filter._id), String(doctorId));
     assert.equal(filter.role, 'doctor');
@@ -59,6 +66,7 @@ test('assigning an active doctor to a hospital leaves professional verification 
     assert.equal(audit.action, 'admin.doctor_hospital_assigned');
   } finally {
     Hospital.findOne = originalHospitalFindOne;
+    User.findOne = originalUserFindOne;
     User.findOneAndUpdate = originalUserFindOneAndUpdate;
     AuditLog.create = originalAuditCreate;
   }
@@ -87,28 +95,57 @@ test('inactive or missing hospitals cannot be assigned to a doctor', async () =>
   }
 });
 
-test('doctors already assigned to another hospital cannot be reassigned through this flow', async () => {
+test('reassignment keeps the doctor active, clears verification, and cancels open slots', async () => {
   const hospitalId = new mongoose.Types.ObjectId();
+  const previousHospitalId = new mongoose.Types.ObjectId();
   const doctorId = new mongoose.Types.ObjectId();
   const originalHospitalFindOne = Hospital.findOne;
-  const originalUserFindOneAndUpdate = User.findOneAndUpdate;
   const originalUserFindOne = User.findOne;
+  const originalUserFindOneAndUpdate = User.findOneAndUpdate;
+  const originalAvailabilityUpdateMany = DoctorAvailability.updateMany;
+  const originalAuditCreate = AuditLog.create;
+  let update;
+  let audit;
   Hospital.findOne = () => query({ _id: hospitalId, name: 'New Hospital' });
-  User.findOneAndUpdate = () => query(null);
   User.findOne = () => query({
     approvalStatus: 'approved',
     isActive: true,
-    hospital: new mongoose.Types.ObjectId()
+    hospital: previousHospitalId,
+    doctorProfile: { profileVerifiedAt: new Date() }
   });
+  User.findOneAndUpdate = (filter, changes) => {
+    assert.equal(String(filter.hospital), String(previousHospitalId));
+    update = changes;
+    return query({ _id: doctorId });
+  };
+  DoctorAvailability.updateMany = async (filter, changes) => {
+    assert.equal(String(filter.doctor), String(doctorId));
+    assert.equal(filter.status, 'Open');
+    assert.equal(changes.$set.status, 'Cancelled');
+    return { modifiedCount: 2 };
+  };
+  AuditLog.create = async entry => { audit = entry; };
 
   try {
-    await assert.rejects(
-      admin.assignDoctorHospital(String(doctorId), String(hospitalId), { _id: new mongoose.Types.ObjectId() }),
-      error => error.statusCode === 409 && error.message === 'Doctor is already assigned to a hospital'
+    const result = await admin.assignDoctorHospital(
+      String(doctorId),
+      String(hospitalId),
+      { _id: new mongoose.Types.ObjectId() }
     );
+    assert.deepEqual(update, {
+      $set: { hospital: hospitalId },
+      $unset: { 'doctorProfile.profileVerifiedAt': 1 }
+    });
+    assert.equal(Object.hasOwn(update.$set, 'isActive'), false);
+    assert.equal(result.profileVerified, false);
+    assert.equal(result.openSlotsCancelled, 2);
+    assert.equal(audit.action, 'admin.doctor_hospital_reassigned');
+    assert.equal(String(audit.metadata.previousHospitalId), String(previousHospitalId));
   } finally {
     Hospital.findOne = originalHospitalFindOne;
-    User.findOneAndUpdate = originalUserFindOneAndUpdate;
     User.findOne = originalUserFindOne;
+    User.findOneAndUpdate = originalUserFindOneAndUpdate;
+    DoctorAvailability.updateMany = originalAvailabilityUpdateMany;
+    AuditLog.create = originalAuditCreate;
   }
 });

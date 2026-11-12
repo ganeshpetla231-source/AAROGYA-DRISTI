@@ -89,11 +89,16 @@ async function availability(query = {}) {
 }
 async function addAvailability(body, user) {
   if (user.role !== 'doctor') throw new ApiError(403, 'Only doctors can publish appointment availability');
-  const doctor = await User.findOne({
-    _id: user._id, role: 'doctor', isActive: true, approvalStatus: 'approved',
-    'doctorProfile.profileVerifiedAt': { $exists: true }
-  }).select('_id').lean();
-  if (!doctor) throw new ApiError(403, 'An active, verified doctor account is required to publish availability');
+  const doctor = await User.findOne({ _id: user._id, role: 'doctor' })
+    .select('isActive approvalStatus hospital doctorProfile.profileVerifiedAt')
+    .lean();
+  if (!doctor || !doctor.isActive || doctor.approvalStatus !== 'approved') {
+    throw new ApiError(403, 'An active, approved doctor account is required to publish availability');
+  }
+  if (!doctor.hospital) throw new ApiError(403, 'Assign this active doctor account to a hospital before publishing availability');
+  if (!doctor.doctorProfile?.profileVerifiedAt) {
+    throw new ApiError(403, 'Your account is active, but hospital verification is still required. Complete your professional profile and ask your hospital manager to verify your qualification and medical-registration documents before publishing availability');
+  }
   const startsAt = validDate(body.startsAt), endsAt = validDate(body.endsAt);
   const slotMinutes = Math.min(120, Math.max(15, Number.parseInt(body.slotMinutes, 10) || 30));
   if (!startsAt || !endsAt || startsAt <= new Date() || endsAt <= startsAt || endsAt - startsAt > 12 * 60 * 60 * 1000) throw new ApiError(400, 'Choose a valid future availability window up to 12 hours');

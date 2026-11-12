@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const mongoose = require('mongoose');
 const telemedicine = require('../src/services/telemedicineService');
 const models = require('../src/models');
 const { Appointment, Consultation } = models;
@@ -89,6 +90,29 @@ test('video booking and consultation schemas persist booking details and partici
   assert.ok(Appointment.schema.path('consultationConsentAt'));
   assert.ok(Consultation.schema.path('patientConsentAt'));
   assert.ok(Consultation.schema.path('doctorConsentAt'));
+});
+
+test('active doctors get actionable guidance when hospital verification is still pending', async t => {
+  const originalFindOne = models.User.findOne;
+  t.after(() => { models.User.findOne = originalFindOne; });
+  models.User.findOne = () => ({
+    select() { return this; },
+    async lean() {
+      return {
+        isActive: true,
+        approvalStatus: 'approved',
+        hospital: new mongoose.Types.ObjectId(),
+        doctorProfile: {}
+      };
+    }
+  });
+
+  await assert.rejects(
+    telemedicine.addAvailability({}, { _id: new mongoose.Types.ObjectId(), role: 'doctor' }),
+    error => error.statusCode === 403
+      && /account is active, but hospital verification is still required/.test(error.message)
+      && /medical-registration documents/.test(error.message)
+  );
 });
 
 test('consultation room responses keep doctor notes private from the patient', async t => {

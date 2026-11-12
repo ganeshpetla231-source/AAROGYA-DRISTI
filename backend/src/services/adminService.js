@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const models = require('../models');
-const { User, HealthcareWorker, Patient, Hospital, OralScreening, Appointment, Consultation, Referral, AuditLog } = models;
+const { User, HealthcareWorker, Patient, Hospital, OralScreening, Appointment, Consultation, Referral, AuditLog, DoctorAvailability } = models;
 const { validatePassword, safeUser } = require('./authService');
 const notificationService = require('./notificationService');
 const supportedLanguages = ['en', 'te', 'hi'];
@@ -499,34 +499,47 @@ async function assignDoctorHospital(doctorId, hospitalId, actor) {
     .lean();
   if (!hospital) throw new ApiError(400, 'Choose an active hospital');
 
+  const existing = await User.findOne({ _id: doctorId, role: 'doctor' })
+    .select('approvalStatus isActive hospital doctorProfile.profileVerifiedAt')
+    .lean();
+  if (!existing) throw new ApiError(404, 'Doctor account not found');
+  if (!existing.isActive || existing.approvalStatus !== 'approved') {
+    throw new ApiError(409, 'Only active, approved doctors can be assigned to a hospital');
+  }
+  if (String(existing.hospital || '') === String(hospital._id)) {
+    return {
+      doctorId,
+      hospital: { id: hospital._id, name: hospital.name, hospitalId: hospital.hospitalId },
+      profileVerified: Boolean(existing.doctorProfile?.profileVerifiedAt),
+      openSlotsCancelled: 0
+    };
+  }
+
   const doctor = await User.findOneAndUpdate(
-    { _id: doctorId, role: 'doctor', approvalStatus: 'approved', isActive: true, hospital: null },
+    { _id: doctorId, role: 'doctor', approvalStatus: 'approved', isActive: true, hospital: existing.hospital || null },
     { $set: { hospital: hospital._id }, $unset: { 'doctorProfile.profileVerifiedAt': 1 } },
     { new: true, runValidators: true }
   ).select('_id').lean();
-  if (!doctor) {
-    const existing = await User.findOne({ _id: doctorId, role: 'doctor' })
-      .select('approvalStatus isActive hospital')
-      .lean();
-    if (!existing) throw new ApiError(404, 'Doctor account not found');
-    if (!existing.isActive || existing.approvalStatus !== 'approved') {
-      throw new ApiError(409, 'Only active, approved doctors can be assigned to a hospital');
-    }
-    if (existing.hospital) throw new ApiError(409, 'Doctor is already assigned to a hospital');
-    throw new ApiError(409, 'Doctor hospital assignment could not be completed; refresh and try again');
-  }
+  if (!doctor) throw new ApiError(409, 'Doctor assignment changed. Refresh the list and try again');
 
+  const openSlotsCancelled = existing.hospital
+    ? (await DoctorAvailability.updateMany(
+      { doctor: doctor._id, status: 'Open', startsAt: { $gt: new Date() } },
+      { $set: { status: 'Cancelled' } }
+    )).modifiedCount
+    : 0;
   await AuditLog.create({
     actor: actor._id,
-    action: 'admin.doctor_hospital_assigned',
+    action: existing.hospital ? 'admin.doctor_hospital_reassigned' : 'admin.doctor_hospital_assigned',
     resourceType: 'User',
     resourceId: doctor._id,
-    metadata: { hospitalId: hospital._id }
+    metadata: { previousHospitalId: existing.hospital || null, hospitalId: hospital._id }
   });
   return {
     doctorId: doctor._id,
     hospital: { id: hospital._id, name: hospital.name, hospitalId: hospital.hospitalId },
-    profileVerified: false
+    profileVerified: false,
+    openSlotsCancelled
   };
 }
 
