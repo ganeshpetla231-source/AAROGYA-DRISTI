@@ -97,7 +97,7 @@ async function addAvailability(body, user) {
   }
   if (!doctor.hospital) throw new ApiError(403, 'Assign this active doctor account to a hospital before publishing availability');
   if (!doctor.doctorProfile?.profileVerifiedAt) {
-    throw new ApiError(403, 'Your account is active, but hospital verification is still required. Complete your professional profile and ask your hospital manager to verify your qualification and medical-registration documents before publishing availability');
+    throw new ApiError(403, 'Your account is active, but administrator verification is still required. Complete your professional profile and ask an administrator to review your qualification and medical-registration documents before publishing availability');
   }
   const startsAt = validDate(body.startsAt), endsAt = validDate(body.endsAt);
   const slotMinutes = Math.min(120, Math.max(15, Number.parseInt(body.slotMinutes, 10) || 30));

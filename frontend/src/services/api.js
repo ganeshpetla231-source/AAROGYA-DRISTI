@@ -178,8 +178,7 @@ export async function getGovernmentPhc(id) { return payload(await api.get(`/gove
 export async function getFacilityProfile() { return payload(await api.get('/facility/profile')); }
 export async function updateFacilityProfile(data) { return payload(await api.patch('/facility/profile', data)); }
 export async function getFacilityDoctors() { return payload(await api.get('/facility/doctors')); }
-export async function createFacilityDoctor(data) { return payload(await api.post('/facility/doctors', data)); }
-export async function updateFacilityDoctor(id, data) { return payload(await api.patch(`/facility/doctors/${encodeURIComponent(id)}`, data)); }
+export async function updateAdminDoctorProfessionalProfile(id, data) { return payload(await api.patch(`/facility/doctors/${encodeURIComponent(id)}/professional-profile`, data)); }
 export async function uploadProfessionalDocument(doctorId, formData) { return payload(await api.post(`/facility/doctors/${encodeURIComponent(doctorId)}/documents`, formData, { timeout: 30000, headers: { 'Content-Type': 'multipart/form-data' } })); }
 export async function verifyProfessionalDocument(id, status) { return payload(await api.patch(`/facility/documents/${encodeURIComponent(id)}/verification`, { status })); }
 export async function verifyFacilityDoctor(id) { return payload(await api.post(`/facility/doctors/${encodeURIComponent(id)}/verify`)); }

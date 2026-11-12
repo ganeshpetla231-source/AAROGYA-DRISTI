@@ -137,6 +137,8 @@
 .patient-profile-form input,
 .patient-profile-form select,
 .admin-doctor-form input,
+.admin-doctor-form select,
+.admin-doctor-form textarea,
 .role-dashboard-table select {
   width: 100%;
   min-height: 44px;
@@ -145,6 +147,11 @@
   border-radius: 10px;
   background: #0a1c35;
   color: #f5fbff;
+}
+
+.admin-doctor-form textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 .patient-profile-form input:read-only {

@@ -92,7 +92,7 @@ test('video booking and consultation schemas persist booking details and partici
   assert.ok(Consultation.schema.path('doctorConsentAt'));
 });
 
-test('active doctors get actionable guidance when hospital verification is still pending', async t => {
+test('active doctors get actionable guidance when administrator verification is still pending', async t => {
   const originalFindOne = models.User.findOne;
   t.after(() => { models.User.findOne = originalFindOne; });
   models.User.findOne = () => ({
@@ -110,7 +110,7 @@ test('active doctors get actionable guidance when hospital verification is still
   await assert.rejects(
     telemedicine.addAvailability({}, { _id: new mongoose.Types.ObjectId(), role: 'doctor' }),
     error => error.statusCode === 403
-      && /account is active, but hospital verification is still required/.test(error.message)
+      && /account is active, but administrator verification is still required/.test(error.message)
       && /medical-registration documents/.test(error.message)
   );
 });

@@ -1,8 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const admin = require('../src/services/adminService');
-const { Hospital, User, AuditLog, DoctorAvailability } = require('../src/models');
+const auth = require('../src/services/authService');
+const facility = require('../src/services/facilityService');
+const { Hospital, User, AuditLog, DoctorAvailability, RefreshSession } = require('../src/models');
 
 function query(value) {
   return {
@@ -147,5 +150,116 @@ test('reassignment keeps the doctor active, clears verification, and cancels ope
     User.findOneAndUpdate = originalUserFindOneAndUpdate;
     DoctorAvailability.updateMany = originalAvailabilityUpdateMany;
     AuditLog.create = originalAuditCreate;
+  }
+});
+
+test('administrator profile updates preserve account status, reset verification, and cancel open slots', async () => {
+  const doctorId = new mongoose.Types.ObjectId();
+  const adminId = new mongoose.Types.ObjectId();
+  const originalUserFindOne = User.findOne;
+  const originalAvailabilityUpdateMany = DoctorAvailability.updateMany;
+  const originalAuditCreate = AuditLog.create;
+  const doctor = {
+    _id: doctorId,
+    isActive: true,
+    approvalStatus: 'approved',
+    doctorProfile: { profileVerifiedAt: new Date() },
+    set(path, value) {
+      const fields = path.split('.');
+      let target = this;
+      while (fields.length > 1) target = target[fields.shift()] ||= {};
+      target[fields[0]] = value;
+    },
+    async save() {}
+  };
+  let slotFilter;
+  let slotUpdate;
+  let audit;
+  User.findOne = async filter => {
+    assert.equal(String(filter._id), String(doctorId));
+    assert.equal(filter.role, 'doctor');
+    return doctor;
+  };
+  DoctorAvailability.updateMany = async (filter, update) => {
+    slotFilter = filter;
+    slotUpdate = update;
+    return { modifiedCount: 3 };
+  };
+  AuditLog.create = async entry => { audit = entry; };
+
+  try {
+    const result = await facility.updateDoctorProfessionalProfile(String(doctorId), {
+      registrationNumber: 'REG-123',
+      qualifications: ['BDS', 'MDS'],
+      department: 'Oral Surgery',
+      specialization: 'Oral Surgery',
+      yearsExperience: 5,
+      consultationFee: 500,
+      expertise: ['Extractions'],
+      biography: 'Professional profile'
+    }, { _id: adminId, role: 'admin' });
+    assert.equal(result.isActive, true);
+    assert.equal(result.approvalStatus, 'approved');
+    assert.equal(result.profileVerified, false);
+    assert.equal(result.openSlotsCancelled, 3);
+    assert.equal(doctor.doctorProfile.profileVerifiedAt, undefined);
+    assert.deepEqual(doctor.doctorProfile.qualifications, ['BDS', 'MDS']);
+    assert.equal(String(slotFilter.doctor), String(doctorId));
+    assert.equal(slotFilter.status, 'Open');
+    assert.equal(slotUpdate.$set.status, 'Cancelled');
+    assert.equal(audit.action, 'admin.doctor_profile_updated');
+  } finally {
+    User.findOne = originalUserFindOne;
+    DoctorAvailability.updateMany = originalAvailabilityUpdateMany;
+    AuditLog.create = originalAuditCreate;
+  }
+});
+
+test('hospital managers cannot update doctor professional profiles', async () => {
+  const originalUserFindOne = User.findOne;
+  User.findOne = () => {
+    assert.fail('Only administrators may update doctor professional profiles');
+  };
+  try {
+    await assert.rejects(
+      facility.updateDoctorProfessionalProfile(new mongoose.Types.ObjectId().toString(), {}, { role: 'hospital' }),
+      error => error.statusCode === 403
+    );
+  } finally {
+    User.findOne = originalUserFindOne;
+  }
+});
+
+test('approved active hospital-created doctors can sign in before professional verification', async () => {
+  const originalUserFindOne = User.findOne;
+  const originalPasswordCompare = bcrypt.compare;
+  const originalSessionCreate = RefreshSession.create;
+  const user = {
+    _id: new mongoose.Types.ObjectId(),
+    name: 'Doctor Example',
+    email: 'doctor@example.test',
+    role: 'doctor',
+    passwordHash: 'stored-hash',
+    approvalStatus: 'approved',
+    isActive: true,
+    createdByHospital: new mongoose.Types.ObjectId(),
+    doctorProfile: {}
+  };
+  User.findOne = () => ({ select: () => Promise.resolve(user) });
+  bcrypt.compare = async () => true;
+  RefreshSession.create = async () => ({});
+
+  try {
+    const session = await auth.login({
+      identifier: user.email,
+      password: 'valid-password',
+      expectedRole: 'doctor'
+    });
+    assert.equal(session.user.role, 'doctor');
+    assert.equal(session.user.id, user._id);
+  } finally {
+    User.findOne = originalUserFindOne;
+    bcrypt.compare = originalPasswordCompare;
+    RefreshSession.create = originalSessionCreate;
   }
 });

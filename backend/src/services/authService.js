@@ -95,9 +95,6 @@ async function login({ email, identifier, staffId, password, expectedRole }) {
   if (expectedRole && !loginCategories[expectedRole].includes(user.role)) throw new ApiError(401, 'Email or password is incorrect');
   if (user.role === 'patient') throw new ApiError(401, 'Patient accounts must sign in with mobile OTP');
   if (user.role === 'doctor' && user.approvalStatus !== 'approved') throw new ApiError(403, 'Doctor account is awaiting administrator approval');
-  if (user.role === 'doctor' && user.createdByHospital && !user.doctorProfile?.profileVerifiedAt) {
-    throw new ApiError(403, 'Doctor account is awaiting hospital verification');
-  }
   if (!user.isActive) throw new ApiError(401, 'Email or password is incorrect');
   return createSession(user);
 }

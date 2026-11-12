@@ -6,6 +6,7 @@ import {
   getAdminPatients, updateResource
 } from '../services/api.js';
 import { FacilityManagement } from './FacilityManagement.jsx';
+import { AdminDoctorVerification } from './AdminDoctorVerification.jsx';
 import { HealthcareWorkers } from './HealthcareWorkers.jsx';
 import './role-dashboards.css';
 
@@ -273,7 +274,8 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
         </tr>)}</tbody>
       </table></div> : <p className="role-dashboard-empty">{t('adminDashboard.noActiveDoctors')}</p>}
       <PaginationControls pagination={approvedPagination} onPageChange={setApprovedPage} label={t('adminDashboard.doctorOptionsPagination')} loading={loading}/>
-    </section></>}
+    </section>
+    <AdminDoctorVerification onChanged={load}/></>}
 
     {section === 'doctors' && <><section className="role-dashboard-panel">
       <header className="role-dashboard-heading"><div><p className="section-overline">{t('adminDashboard.accountProvisioning')}</p><h2>{t('adminDashboard.createDoctorTitle')}</h2><p>{t('adminDashboard.createDoctorDescription')}</p></div></header>

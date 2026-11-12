@@ -1,29 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { oralHealthDepartments, specialtiesForDepartment } from '../data/oralHealthDepartments.js';
 import { Building2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Pencil, RefreshCw, Search, ShieldCheck, UserRound } from 'lucide-react';
 import {
-  createAdminHospital, createFacilityDoctor, getAdminFacilitySummary, getAdminFacilities,
-  getAdminHospitalManagers, getFacilityDoctors,
-  downloadProfessionalDocument, getFacilityProfile, updateFacilityProfile, uploadProfessionalDocument,
-  updateAdminFacility, verifyFacilityDoctor, verifyProfessionalDocument
+  createAdminHospital, getAdminFacilitySummary, getAdminFacilities, getAdminHospitalManagers,
+  getFacilityProfile, updateFacilityProfile, updateAdminFacility
 } from '../services/api.js';
 import './facility-management.css';
-
-const emptyDoctor = {
-  name: '', email: '', phone: '', registrationNumber: '', department: '', specialization: '',
-  qualifications: '', yearsExperience: '0', consultationFee: '0', biography: ''
-};
 
 export function FacilityManagement({ role }) {
   const { t } = useTranslation();
   const [hospital, setHospital] = useState(null);
-  const [doctors, setDoctors] = useState([]);
   const [profile, setProfile] = useState({});
-  const [doctor, setDoctor] = useState(emptyDoctor);
-  const [upload, setUpload] = useState({ doctorId: '', documentType: 'qualification', title: '', file: null });
-  const [credential, setCredential] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -33,10 +21,9 @@ export function FacilityManagement({ role }) {
     setLoading(true);
     setError('');
     try {
-      const [profileResult, doctorResult] = await Promise.all([getFacilityProfile(), getFacilityDoctors()]);
+      const profileResult = await getFacilityProfile();
       setHospital(profileResult.hospital);
       setProfile(profileResult.hospital);
-      setDoctors(doctorResult.items || []);
     } catch (failure) { setError(failure.message); }
     finally { setLoading(false); }
   }
@@ -47,33 +34,12 @@ export function FacilityManagement({ role }) {
     setBusy(true);
     setError('');
     setNotice('');
-    setCredential(null);
     try {
-      const result = await action();
-      if (result?.initialPassword) setCredential(result);
+      await action();
       setNotice(successMessage);
       await load();
-      return true;
     } catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
-    return false;
-  }
-
-  function update(setter, field, value) {
-    setter(current => ({ ...current, [field]: value }));
-  }
-
-  async function downloadDocument(document) {
-    setError('');
-    try {
-      const file = await downloadProfessionalDocument(document._id);
-      const url = URL.createObjectURL(file);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = document.title.replace(/[^a-z0-9._-]+/gi, '_').slice(0, 100) || 'professional-document';
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (failure) { setError(failure.message); }
   }
 
   if (role === 'admin') return <AdminFacilitiesWorkspace/>;
@@ -81,115 +47,28 @@ export function FacilityManagement({ role }) {
   return <section className="facility-workspace">
     <div className="panel">
       <h2>{t('facility.title')}</h2>
-      <p>{t(role === 'admin' ? 'facility.adminIntro' : 'facility.managerIntro')}</p>
+      <p>{t('facility.managerIntro')}</p>
     </div>
     {error && <p className="form-error" role="alert">{error}</p>}
     {notice && <p className="api-success" role="status">{notice}</p>}
-    {credential && <div className="panel" role="status">
-      <strong>{t('facility.initialPassword')}</strong>
-      <p>{credential.manager?.email || credential.doctor?.email}</p>
-      <code>{credential.initialPassword}</code>
-      <p>{t('facility.passwordWarning')}</p>
-    </div>}
-    {loading ? <div className="panel">{t('common.loading')}</div> : <>
-      {hospital && <form className="panel auth-form" onSubmit={event => {
-        event.preventDefault();
-        const fields = ['registrationNumber', 'facilityType', 'village', 'mandal', 'district', 'address', 'phone', 'postalCode', 'workingHours'];
-        const changes = Object.fromEntries(fields.map(field => [field, profile[field] || '']));
-        submit(() => updateFacilityProfile(changes), t('facility.profileSaved'));
-      }}>
-        <h3>{hospital.name}</h3>
-        {['registrationNumber', 'facilityType', 'village', 'mandal', 'district', 'address', 'phone', 'postalCode', 'workingHours'].map(field =>
-          <label key={field}>{t(`facility.${field}`)}
-            <input value={profile[field] || ''} maxLength={field === 'address' || field === 'workingHours' ? 500 : field === 'postalCode' ? 6 : 120}
-              onChange={event => update(setProfile, field, event.target.value)}/>
-          </label>)}
-        <button className="auth-submit" disabled={busy}>{t('facility.saveProfile')}</button>
-      </form>}
-      <form className="panel auth-form" onSubmit={event => {
-        event.preventDefault();
-        const data = {
-          name: doctor.name, email: doctor.email, phone: doctor.phone,
-          doctorProfile: {
-            registrationNumber: doctor.registrationNumber, department: doctor.department, specialization: doctor.specialization,
-            qualifications: doctor.qualifications.split(',').map(value => value.trim()).filter(Boolean),
-            yearsExperience: Number(doctor.yearsExperience), consultationFee: Number(doctor.consultationFee),
-            biography: doctor.biography
-          }
-        };
-        submit(() => createFacilityDoctor(data), t('facility.doctorCreated')).then(saved => {
-          if (saved) setDoctor(emptyDoctor);
-        });
-      }}>
-        <h3>{t('facility.addDoctor')}</h3>
-        {[
-          ['name', 'facility.doctorName', 'text'], ['email', 'facility.doctorEmail', 'email'],
-          ['phone', 'facility.phone', 'tel'], ['registrationNumber', 'facility.doctorRegistrationNumber', 'text'],
-          ['qualifications', 'facility.qualifications', 'text'],
-          ['yearsExperience', 'facility.yearsExperience', 'number'], ['consultationFee', 'facility.consultationFee', 'number']
-        ].map(([field, label, type]) => <label key={field}>{t(label)}
-          <input required type={type} min={type === 'number' ? '0' : undefined}
-            step={field === 'yearsExperience' ? '1' : field === 'consultationFee' ? '0.01' : undefined}
-            value={doctor[field]} onChange={event => update(setDoctor, field, event.target.value)}/>
+    {loading ? <div className="panel">{t('common.loading')}</div> : hospital && <form className="panel auth-form" onSubmit={event => {
+      event.preventDefault();
+      const fields = ['registrationNumber', 'facilityType', 'village', 'mandal', 'district', 'address', 'phone', 'postalCode', 'workingHours'];
+      const changes = Object.fromEntries(fields.map(field => [field, profile[field] || '']));
+      submit(() => updateFacilityProfile(changes), t('facility.profileSaved'));
+    }}>
+      <h3>{hospital.name}</h3>
+      {['registrationNumber', 'facilityType', 'village', 'mandal', 'district', 'address', 'phone', 'postalCode', 'workingHours'].map(field =>
+        <label key={field}>{t(`facility.${field}`)}
+          <input value={profile[field] || ''} maxLength={field === 'address' || field === 'workingHours' ? 500 : field === 'postalCode' ? 6 : 120}
+            onChange={event => setProfile(current => ({ ...current, [field]: event.target.value }))}/>
         </label>)}
-        <label>{t('doctorProfile.department')}<select required value={doctor.department} onChange={event => {
-          const department = event.target.value;
-          update(setDoctor, 'department', department);
-          update(setDoctor, 'specialization', specialtiesForDepartment(department)[0] || '');
-        }}>
-          <option value="">{t('doctorProfile.selectDepartment')}</option>
-          {oralHealthDepartments.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
-        </select></label>
-        <label>{t('doctorProfile.specialization')}<select required disabled={!doctor.department} value={doctor.specialization}
-          onChange={event => update(setDoctor, 'specialization', event.target.value)}>
-          <option value="">{t('doctorProfile.selectSpecialization')}</option>
-          {specialtiesForDepartment(doctor.department).map(value => <option key={value} value={value}>{value}</option>)}
-        </select></label>
-        <label>{t('facility.biography')}<textarea required maxLength={2000} value={doctor.biography}
-          onChange={event => update(setDoctor, 'biography', event.target.value)}/></label>
-        <p>{t('facility.qualificationsHelp')}</p>
-        <button className="auth-submit" disabled={busy}>{t('facility.addDoctor')}</button>
-      </form>
-      <form className="panel auth-form" onSubmit={event => {
-        event.preventDefault();
-        if (!upload.file) return setError(t('facility.chooseDocument'));
-        const data = new FormData();
-        data.append('documentType', upload.documentType);
-        data.append('title', upload.title);
-        data.append('document', upload.file);
-        submit(() => uploadProfessionalDocument(upload.doctorId, data), t('facility.documentUploaded')).then(saved => {
-          if (saved) setUpload({ doctorId: '', documentType: 'qualification', title: '', file: null });
-        });
-      }}>
-        <h3>{t('facility.uploadDocument')}</h3>
-        <label>{t('facility.doctor')}<select required value={upload.doctorId} onChange={event => update(setUpload, 'doctorId', event.target.value)}>
-          <option value="">{t('facility.selectDoctor')}</option>
-          {doctors.map(item => <option key={item._id} value={item._id}>{item.name} — {item.email}</option>)}
-        </select></label>
-        <label>{t('facility.documentType')}<select value={upload.documentType} onChange={event => update(setUpload, 'documentType', event.target.value)}>
-          {['qualification', 'medical-registration', 'experience', 'other'].map(value => <option key={value} value={value}>{t(`facility.documentTypes.${value}`)}</option>)}
-        </select></label>
-        <label>{t('facility.documentTitle')}<input required maxLength={160} value={upload.title} onChange={event => update(setUpload, 'title', event.target.value)}/></label>
-        <label>{t('facility.documentFile')}<input required type="file" accept="application/pdf,image/jpeg,image/png" onChange={event => update(setUpload, 'file', event.target.files?.[0] || null)}/></label>
-        <button className="auth-submit" disabled={busy || !doctors.length}>{t('facility.uploadDocument')}</button>
-      </form>
-      <div className="panel">
-        <h3>{t('facility.doctors')}</h3>
-        {doctors.length ? doctors.map(item => <article className="facility-item" key={item._id}>
-          <strong>{item.name}</strong><span>{item.email} · {item.staffId}</span>
-          <span>{t('facility.status')}: {item.isActive ? t('facility.active') : t('facility.pending')}</span>
-          {(item.documents || []).map(document => <div key={document._id}>
-            {document.title} ({t(`facility.documentTypes.${document.documentType}`)}) — {document.verificationStatus}
-            <button type="button" onClick={() => downloadDocument(document)}>{t('facility.viewDocument')}</button>
-            {document.verificationStatus === 'pending' && <span>
-              <button type="button" onClick={() => submit(() => verifyProfessionalDocument(document._id, 'verified'), t('facility.documentVerified'))}>{t('facility.verify')}</button>
-              <button type="button" onClick={() => submit(() => verifyProfessionalDocument(document._id, 'rejected'), t('facility.reject'))}>{t('facility.reject')}</button>
-            </span>}
-          </div>)}
-          {!item.isActive && <button type="button" disabled={busy} onClick={() => submit(() => verifyFacilityDoctor(item._id), t('facility.doctorVerified'))}>{t('facility.verifyDoctor')}</button>}
-        </article>) : <p>{t('facility.noDoctors')}</p>}
-      </div>
-    </>}
+      <button className="auth-submit" disabled={busy}>{t('facility.saveProfile')}</button>
+    </form>}
+    <div className="panel">
+      <h3>{t('facility.adminManagedDoctorsTitle')}</h3>
+      <p>{t('facility.adminManagedDoctorsHelp')}</p>
+    </div>
   </section>;
 }
 

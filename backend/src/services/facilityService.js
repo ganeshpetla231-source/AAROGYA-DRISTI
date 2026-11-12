@@ -1,17 +1,19 @@
 const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { Hospital, User, ProfessionalDocument, AuditLog } = require('../models');
+const { Hospital, User, ProfessionalDocument, AuditLog, DoctorAvailability } = require('../models');
 const { hasValidSignature } = require('../utils/fileSignatures');
 const fileStorage = require('./fileStorageService');
 
 const managerFields = new Set(['registrationNumber', 'facilityType', 'village', 'mandal', 'district', 'address', 'phone', 'postalCode', 'coordinates', 'workingHours', 'beds', 'services']);
-const profileFields = new Set(['qualifications', 'registrationNumber', 'department', 'specialization', 'yearsExperience', 'expertise', 'consultationFee', 'biography']);
 const limits = { registrationNumber: 100, facilityType: 100, village: 120, mandal: 120, district: 120, address: 500, phone: 30, postalCode: 6, workingHours: 500 };
 
 function assertManager(user) {
   if (user?.role !== 'hospital' || !user.hospital) throw new ApiError(403, 'Hospital Manager access is required');
+}
+
+function assertAdmin(user) {
+  if (user?.role !== 'admin') throw new ApiError(403, 'Administrator access is required for doctor credential management');
 }
 
 function encrypt(bytes) {
@@ -88,52 +90,14 @@ async function updateProfile(body, user) {
   return { hospital: hospital.toObject() };
 }
 
-function cleanDoctorProfile(input = {}) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ApiError(400, 'Provide a doctor profile');
-  const unknown = Object.keys(input).find(field => !profileFields.has(field));
-  if (unknown) throw new ApiError(400, `Unsupported doctor profile field: ${unknown}`);
-  const profile = {};
-  for (const field of ['registrationNumber', 'specialization', 'biography']) {
-    if (typeof input[field] !== 'string' || !input[field].trim() || input[field].trim().length > (field === 'biography' ? 2000 : 120)) {
-      throw new ApiError(400, `Enter a valid doctor ${field}`);
-    }
-    profile[field] = input[field].trim();
-  }
-  if (input.department !== undefined) {
-    if (typeof input.department !== 'string' || !input.department.trim() || input.department.trim().length > 120) {
-      throw new ApiError(400, 'Enter a valid doctor department');
-    }
-    profile.department = input.department.trim();
-  }
-  if (!Array.isArray(input.qualifications) || !input.qualifications.length || input.qualifications.length > 12 ||
-      input.qualifications.some(value => typeof value !== 'string' || !value.trim() || value.trim().length > 120)) {
-    throw new ApiError(400, 'Provide between 1 and 12 valid doctor qualifications');
-  }
-  profile.qualifications = [...new Set(input.qualifications.map(value => value.trim()))];
-  if (input.expertise !== undefined && (!Array.isArray(input.expertise) || input.expertise.length > 20 ||
-      input.expertise.some(value => typeof value !== 'string' || !value.trim() || value.trim().length > 120))) {
-    throw new ApiError(400, 'Provide up to 20 valid expertise areas');
-  }
-  profile.expertise = [...new Set((input.expertise || []).map(value => value.trim()))];
-  if (!Number.isInteger(input.yearsExperience) || input.yearsExperience < 0 || input.yearsExperience > 80) {
-    throw new ApiError(400, 'Enter a valid number of years of experience');
-  }
-  if (!Number.isFinite(input.consultationFee) || input.consultationFee < 0 || input.consultationFee > 1000000) {
-    throw new ApiError(400, 'Enter a valid consultation fee');
-  }
-  profile.yearsExperience = input.yearsExperience;
-  profile.consultationFee = input.consultationFee;
-  if (input.biography && input.biography.length > 2000) throw new ApiError(400, 'Doctor biography must be at most 2,000 characters');
-  return profile;
-}
-
 async function listDoctors(user) {
-  assertManager(user);
-  const items = await User.find({ role: 'doctor', hospital: user.hospital })
-    .select('name email phone staffId approvalStatus isActive doctorProfile createdAt')
-    .sort({ createdAt: -1 }).limit(100).lean();
+  assertAdmin(user);
+  const items = await User.find({ role: 'doctor' })
+    .select('name email phone staffId approvalStatus isActive hospital doctorProfile createdAt')
+    .populate('hospital', 'name hospitalId isActive')
+    .sort({ createdAt: -1 }).limit(200).lean();
   const doctorIds = items.map(item => item._id);
-  const docs = await ProfessionalDocument.find({ doctor: { $in: doctorIds }, hospital: user.hospital })
+  const docs = await ProfessionalDocument.find({ doctor: { $in: doctorIds } })
     .select('doctor documentType title verificationStatus verifiedAt createdAt').sort({ createdAt: -1 }).lean();
   const documentsByDoctor = new Map();
   for (const item of docs) {
@@ -144,59 +108,78 @@ async function listDoctors(user) {
   return { items: items.map(item => ({ ...item, documents: documentsByDoctor.get(String(item._id)) || [] })), total: items.length };
 }
 
-async function createDoctor(body, user) {
-  assertManager(user);
-  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new ApiError(400, 'Provide doctor account details');
-  const allowed = new Set(['name', 'email', 'phone', 'doctorProfile']);
-  const unknown = Object.keys(body).find(field => !allowed.has(field));
-  if (unknown) throw new ApiError(400, `Unsupported doctor account field: ${unknown}`);
-  const name = typeof body.name === 'string' ? body.name.trim() : '';
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-  if (!name || name.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
-    throw new ApiError(400, 'Enter a doctor name and valid email address');
-  }
-  if (body.phone !== undefined && (typeof body.phone !== 'string' || body.phone.trim().length > 30)) throw new ApiError(400, 'Enter a valid doctor phone number');
-  const doctorProfile = cleanDoctorProfile(body.doctorProfile);
-  const initialPassword = crypto.randomBytes(18).toString('hex').toLowerCase();
-  const staffId = `AD-DOC-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-  try {
-    const doctor = await User.create({
-      name, email, phone: body.phone?.trim(), staffId, passwordHash: await bcrypt.hash(initialPassword, 12),
-      role: 'doctor', hospital: user.hospital, approvalStatus: 'pending', isActive: false,
-      mustChangePassword: true, createdByHospital: true, doctorProfile
-    });
-    await AuditLog.create({ actor: user._id, action: 'hospital.doctor_created', resourceType: 'User', resourceId: doctor._id, metadata: { hospital: user.hospital } });
-    return { doctor: { id: doctor._id, name: doctor.name, email: doctor.email, staffId, approvalStatus: doctor.approvalStatus }, initialPassword };
-  } catch (error) {
-    if (error?.code === 11000) throw new ApiError(409, 'An account with this email or staff ID already exists');
-    throw error;
-  }
-}
-
-async function updateDoctor(doctorId, body, user) {
-  assertManager(user);
+async function updateDoctorProfessionalProfile(doctorId, input, user) {
+  assertAdmin(user);
   if (!mongoose.isValidObjectId(doctorId)) throw new ApiError(400, 'Invalid doctor ID');
-  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(field => field !== 'doctorProfile' && field !== 'isActive')) {
-    throw new ApiError(400, 'Only the professional profile or account active state can be updated');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ApiError(400, 'Provide professional profile fields');
+  const allowed = new Set(['registrationNumber', 'qualifications', 'department', 'specialization', 'yearsExperience', 'expertise', 'consultationFee', 'biography']);
+  const unknown = Object.keys(input).find(field => !allowed.has(field));
+  if (unknown) throw new ApiError(400, `Unsupported professional profile field: ${unknown}`);
+
+  const registrationNumber = typeof input.registrationNumber === 'string' ? input.registrationNumber.trim() : '';
+  if (!registrationNumber || registrationNumber.length > 80) throw new ApiError(400, 'Enter a valid medical registration number');
+  if (!Array.isArray(input.qualifications) || !input.qualifications.length || input.qualifications.length > 12 ||
+      input.qualifications.some(value => typeof value !== 'string' || !value.trim() || value.trim().length > 120)) {
+    throw new ApiError(400, 'Provide between 1 and 12 valid doctor qualifications');
   }
-  const doctor = await User.findOne({ _id: doctorId, role: 'doctor', hospital: user.hospital });
-  if (!doctor) throw new ApiError(404, 'Doctor not found at your hospital');
-  if (body.doctorProfile) doctor.doctorProfile = cleanDoctorProfile(body.doctorProfile);
-  if (body.isActive !== undefined) {
-    if (typeof body.isActive !== 'boolean') throw new ApiError(400, 'isActive must be a boolean');
-    doctor.isActive = body.isActive;
-    if (!body.isActive) doctor.authVersion += 1;
+  for (const field of ['department', 'specialization']) {
+    if (input[field] !== undefined && (typeof input[field] !== 'string' || input[field].trim().length > 120)) {
+      throw new ApiError(400, `Enter a valid doctor ${field}`);
+    }
   }
+  if (!Number.isInteger(input.yearsExperience) || input.yearsExperience < 0 || input.yearsExperience > 80) {
+    throw new ApiError(400, 'Enter a valid number of years of experience');
+  }
+  if (!Number.isFinite(input.consultationFee) || input.consultationFee < 0 || input.consultationFee > 1000000) {
+    throw new ApiError(400, 'Enter a valid consultation fee');
+  }
+  if (typeof input.biography !== 'string' || input.biography.length > 2000) {
+    throw new ApiError(400, 'Enter a doctor biography up to 2,000 characters');
+  }
+  if (input.expertise !== undefined && (!Array.isArray(input.expertise) || input.expertise.length > 20 ||
+      input.expertise.some(value => typeof value !== 'string' || !value.trim() || value.trim().length > 120))) {
+    throw new ApiError(400, 'Provide up to 20 valid expertise areas');
+  }
+
+  const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
+  if (!doctor) throw new ApiError(404, 'Doctor account not found');
+  doctor.set('doctorProfile.registrationNumber', registrationNumber);
+  doctor.set('doctorProfile.qualifications', [...new Set(input.qualifications.map(value => value.trim()))]);
+  doctor.set('doctorProfile.department', input.department?.trim() || undefined);
+  doctor.set('doctorProfile.specialization', input.specialization?.trim() || undefined);
+  doctor.set('doctorProfile.yearsExperience', input.yearsExperience);
+  doctor.set('doctorProfile.expertise', [...new Set((input.expertise || []).map(value => value.trim()))]);
+  doctor.set('doctorProfile.consultationFee', input.consultationFee);
+  doctor.set('doctorProfile.biography', input.biography.trim());
+  const wasVerified = Boolean(doctor.doctorProfile?.profileVerifiedAt);
+  doctor.set('doctorProfile.profileVerifiedAt', undefined);
   await doctor.save();
-  await AuditLog.create({ actor: user._id, action: 'hospital.doctor_updated', resourceType: 'User', resourceId: doctor._id });
-  return { id: doctor._id, name: doctor.name, isActive: doctor.isActive, doctorProfile: doctor.doctorProfile };
+
+  const openSlotsCancelled = wasVerified
+    ? (await DoctorAvailability.updateMany(
+      { doctor: doctor._id, status: 'Open', startsAt: { $gt: new Date() } },
+      { $set: { status: 'Cancelled' } }
+    )).modifiedCount
+    : 0;
+  await AuditLog.create({ actor: user._id, action: 'admin.doctor_profile_updated', resourceType: 'User', resourceId: doctor._id });
+  return {
+    id: doctor._id,
+    isActive: doctor.isActive,
+    approvalStatus: doctor.approvalStatus,
+    doctorProfile: doctor.doctorProfile,
+    profileVerified: false,
+    openSlotsCancelled
+  };
 }
 
 async function uploadDocument(doctorId, file, body, user) {
-  assertManager(user);
+  assertAdmin(user);
   if (!mongoose.isValidObjectId(doctorId)) throw new ApiError(400, 'Invalid doctor ID');
-  const doctor = await User.findOne({ _id: doctorId, role: 'doctor', hospital: user.hospital }).select('_id').lean();
-  if (!doctor) throw new ApiError(404, 'Doctor not found at your hospital');
+  const doctor = await User.findOne({ _id: doctorId, role: 'doctor' }).select('_id hospital').lean();
+  if (!doctor) throw new ApiError(404, 'Doctor account not found');
+  if (!doctor.hospital || !await Hospital.exists({ _id: doctor.hospital, isActive: true })) {
+    throw new ApiError(409, 'Assign the doctor to an active hospital before uploading credentials');
+  }
   if (!file) throw new ApiError(400, 'Choose a professional document');
   if (file.size > 10 * 1024 * 1024) throw new ApiError(413, 'Professional documents must be 10 MB or smaller');
   if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.mimetype) || !hasValidSignature(file.buffer, file.mimetype)) {
@@ -210,11 +193,11 @@ async function uploadDocument(doctorId, file, body, user) {
   await fileStorage.put(storageKey, encrypt(file.buffer));
   try {
     const item = await ProfessionalDocument.create({
-      doctor: doctor._id, hospital: user.hospital, uploadedBy: user._id,
+      doctor: doctor._id, hospital: doctor.hospital, uploadedBy: user._id,
       documentType, title, storageKey, mimeType: file.mimetype,
       sha256: crypto.createHash('sha256').update(file.buffer).digest('hex'), byteLength: file.size
     });
-    await AuditLog.create({ actor: user._id, action: 'hospital.doctor_document_uploaded', resourceType: 'ProfessionalDocument', resourceId: item._id, metadata: { doctor: doctor._id, documentType } });
+    await AuditLog.create({ actor: user._id, action: 'admin.doctor_document_uploaded', resourceType: 'ProfessionalDocument', resourceId: item._id, metadata: { doctor: doctor._id, documentType } });
     return safeDocument(item);
   } catch (error) {
     await fileStorage.remove(storageKey).catch(() => {});
@@ -223,53 +206,48 @@ async function uploadDocument(doctorId, file, body, user) {
 }
 
 async function listDocuments(doctorId, user) {
-  assertManager(user);
+  assertAdmin(user);
   if (!mongoose.isValidObjectId(doctorId)) throw new ApiError(400, 'Invalid doctor ID');
-  if (!await User.exists({ _id: doctorId, role: 'doctor', hospital: user.hospital })) throw new ApiError(404, 'Doctor not found at your hospital');
-  const items = await ProfessionalDocument.find({ doctor: doctorId, hospital: user.hospital })
+  if (!await User.exists({ _id: doctorId, role: 'doctor' })) throw new ApiError(404, 'Doctor account not found');
+  const items = await ProfessionalDocument.find({ doctor: doctorId })
     .select('-storageKey -sha256').sort({ createdAt: -1 }).lean();
   return { items };
 }
 
 async function setDocumentVerification(documentId, status, user) {
-  assertManager(user);
+  assertAdmin(user);
   if (!mongoose.isValidObjectId(documentId)) throw new ApiError(400, 'Invalid document ID');
   if (!['verified', 'rejected'].includes(status)) throw new ApiError(400, 'Choose verified or rejected');
-  const item = await ProfessionalDocument.findOne({ _id: documentId, hospital: user.hospital });
-  if (!item) throw new ApiError(404, 'Professional document not found at your hospital');
+  const item = await ProfessionalDocument.findById(documentId);
+  if (!item) throw new ApiError(404, 'Professional document not found');
   item.verificationStatus = status;
   item.verifiedBy = user._id;
   item.verifiedAt = new Date();
   await item.save();
-  await AuditLog.create({ actor: user._id, action: `hospital.doctor_document_${status}`, resourceType: 'ProfessionalDocument', resourceId: item._id, metadata: { doctor: item.doctor, documentType: item.documentType } });
+  await AuditLog.create({ actor: user._id, action: `admin.doctor_document_${status}`, resourceType: 'ProfessionalDocument', resourceId: item._id, metadata: { doctor: item.doctor, documentType: item.documentType } });
   return safeDocument(item);
 }
 
 async function verifyDoctor(doctorId, user) {
-  assertManager(user);
+  assertAdmin(user);
   if (!mongoose.isValidObjectId(doctorId)) throw new ApiError(400, 'Invalid doctor ID');
-  const doctor = await User.findOne({ _id: doctorId, role: 'doctor', hospital: user.hospital });
-  if (!doctor) throw new ApiError(404, 'Doctor not found at your hospital');
-  const docs = await ProfessionalDocument.find({ doctor: doctor._id, hospital: user.hospital, verificationStatus: 'verified' }).select('documentType').lean();
+  const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
+  if (!doctor) throw new ApiError(404, 'Doctor account not found');
+  const docs = await ProfessionalDocument.find({ doctor: doctor._id, verificationStatus: 'verified' }).select('documentType').lean();
   if (!docs.some(item => item.documentType === 'qualification') || !docs.some(item => item.documentType === 'medical-registration')) {
-    throw new ApiError(409, 'Verify at least one qualification and one medical-registration document before activating the doctor');
+    throw new ApiError(409, 'Verify at least one qualification and one medical-registration document before verifying the doctor profile');
   }
-  if (!doctor.doctorProfile?.registrationNumber || !doctor.doctorProfile?.qualifications?.length) throw new ApiError(409, 'Complete the doctor professional profile before activation');
+  if (!doctor.doctorProfile?.registrationNumber || !doctor.doctorProfile?.qualifications?.length) throw new ApiError(409, 'Complete the doctor professional profile before verification');
   doctor.doctorProfile.profileVerifiedAt = new Date();
-  doctor.approvalStatus = 'approved';
-  doctor.isActive = true;
-  doctor.authVersion += 1;
   await doctor.save();
-  await AuditLog.create({ actor: user._id, action: 'hospital.doctor_verified', resourceType: 'User', resourceId: doctor._id });
+  await AuditLog.create({ actor: user._id, action: 'admin.doctor_verified', resourceType: 'User', resourceId: doctor._id });
   return { id: doctor._id, name: doctor.name, approvalStatus: doctor.approvalStatus, isActive: doctor.isActive };
 }
 
 async function downloadDocument(documentId, user) {
-  if (!['hospital', 'admin'].includes(user.role)) throw new ApiError(403, 'Professional document access denied');
+  assertAdmin(user);
   if (!mongoose.isValidObjectId(documentId)) throw new ApiError(400, 'Invalid document ID');
-  const filter = { _id: documentId };
-  if (user.role === 'hospital') filter.hospital = user.hospital;
-  const item = await ProfessionalDocument.findOne(filter).select('+storageKey +sha256');
+  const item = await ProfessionalDocument.findOne({ _id: documentId }).select('+storageKey +sha256');
   if (!item) throw new ApiError(404, 'Professional document not found');
   const encryptedBytes = await fileStorage.get(item.storageKey);
   const bytes = decrypt(encryptedBytes);
@@ -279,6 +257,6 @@ async function downloadDocument(documentId, user) {
 }
 
 module.exports = {
-  getProfile, updateProfile, listDoctors, createDoctor, updateDoctor,
-  uploadDocument, listDocuments, setDocumentVerification, verifyDoctor, downloadDocument
+  getProfile, updateProfile, listDoctors,
+  updateDoctorProfessionalProfile, uploadDocument, listDocuments, setDocumentVerification, verifyDoctor, downloadDocument
 };
