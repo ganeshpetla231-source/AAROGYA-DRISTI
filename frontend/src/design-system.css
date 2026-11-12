@@ -1,9 +1,23 @@
 :root {
-  --page: #f2fffb;
-  --page-soft: #eafbF5;
+  --navy: #102A43;
+  --forest-green: #14532D;
+  --deep-green: #166534;
+  --royal-blue: #1E40AF;
+  --primary-text: #243B53;
+  --secondary-text: #486581;
+  --page: #F3F7F5;
+  --page-soft: #EAF0EC;
+  --surface: #FFFFFF;
+  --line: #BCCDC4;
+  --ink: var(--primary-text);
+  --muted: var(--secondary-text);
+  --teal: var(--forest-green);
+  --teal-dark: var(--navy);
+  --lime: var(--deep-green);
+  --shadow: 0 12px 28px rgba(16, 42, 67, 0.08);
   --font-body: Inter, "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: Inter, "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --glass-surface: rgba(255, 255, 255, 0.35);
+  --glass-surface: rgba(255, 255, 255, 0.96);
   --glass-blur: 12px;
   --space-1: 4px;
   --space-2: 8px;
@@ -22,9 +36,11 @@
   --text-label: 14px;
   --line-body: 1.55;
   --line-heading: 1.25;
-  --radius-card: 20px;
+  --radius-card: 16px;
   --radius-pill: 999px;
-  --focus-ring: #8ecdb3;
+  --focus-ring: var(--royal-blue);
+  color: var(--primary-text);
+  background: var(--page);
 }
 
 html {
@@ -312,6 +328,266 @@ textarea {
       to {
         opacity: 1;
         translate: 0 0;
+      }
+    }
+
+    html,
+    body {
+      color: var(--primary-text);
+      background: var(--page);
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse at 92% 0%, rgba(20, 83, 45, 0.045), transparent 34%),
+        var(--page);
+    }
+
+    a {
+      color: var(--royal-blue);
+    }
+
+    a:hover {
+      color: var(--forest-green);
+    }
+
+    :is(input, select, textarea) {
+      border-color: var(--line);
+      color: var(--primary-text);
+      background-color: var(--surface);
+    }
+
+    :is(input, select, textarea)::placeholder {
+      color: var(--secondary-text);
+      opacity: 0.82;
+    }
+
+    :is(input, select, textarea):focus-visible {
+      border-color: var(--royal-blue);
+      outline-color: var(--royal-blue);
+    }
+
+    :is(.auth-submit, .button-lime, .role-dashboard-primary, .role-dashboard-hero-button, .telemedicine-join, .date-chip) {
+      border-color: var(--forest-green);
+      color: #fff;
+      background: var(--forest-green);
+    }
+
+    :is(.auth-submit, .button-lime, .role-dashboard-primary, .role-dashboard-hero-button, .telemedicine-join, .date-chip):hover:not(:disabled) {
+      border-color: var(--deep-green);
+      color: #fff;
+      background: var(--deep-green);
+    }
+
+    :is(.auth-page, .marketing-site) {
+      color: var(--primary-text);
+      background: var(--page);
+    }
+
+    .auth-page :is(input, select, textarea),
+    .auth-page .auth-card :is(input, select, textarea) {
+      border-color: var(--line);
+      color: var(--primary-text);
+      background: var(--surface);
+    }
+
+    .auth-page .auth-submit,
+    .dashboard-shell .auth-submit {
+      border-color: var(--forest-green);
+      color: #fff;
+      background: var(--forest-green);
+    }
+
+    .auth-page .auth-submit:hover:not(:disabled),
+    .dashboard-shell .auth-submit:hover:not(:disabled) {
+      border-color: var(--deep-green);
+      background: var(--deep-green);
+    }
+
+    .auth-card {
+      border: 1px solid var(--line);
+      color: var(--primary-text);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .auth-card :is(h1, h2, h3, label) {
+      color: var(--navy);
+    }
+
+    .dashboard-shell,
+    .role-dashboard-shell {
+      color: var(--primary-text);
+      background: var(--page);
+    }
+
+    .role-dashboard-shell {
+      --role-deep-teal: var(--navy);
+      --role-emerald: var(--forest-green);
+      --role-white: var(--surface);
+      --role-soft-blue: #EEF3F8;
+      --role-soft-mint: #E8F0EB;
+    }
+
+    .dashboard-shell .sidebar,
+    .role-dashboard-shell .sidebar {
+      border-color: var(--navy);
+      color: #fff;
+      background: var(--navy);
+      box-shadow: 8px 0 28px rgba(16, 42, 67, 0.16);
+    }
+
+    .dashboard-shell .sidebar nav button,
+    .role-dashboard-shell .sidebar nav button {
+      color: #EAF0F5;
+    }
+
+    .dashboard-shell .sidebar nav button:hover,
+    .role-dashboard-shell .sidebar nav button:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .dashboard-shell .sidebar nav button.nav-current,
+    .role-dashboard-shell .sidebar nav button.nav-current {
+      border-color: var(--deep-green);
+      color: #fff;
+      background: var(--forest-green);
+      box-shadow: 0 6px 16px rgba(16, 42, 67, 0.2);
+    }
+
+    .dashboard-shell .topbar,
+    .role-dashboard-shell .topbar {
+      border-color: var(--line);
+      color: var(--primary-text);
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 4px 18px rgba(16, 42, 67, 0.06);
+    }
+
+    .dashboard-shell :is(.breadcrumb, .page-subtitle, .profile-text small, .panel-heading p, .setting-row small),
+    .role-dashboard-shell :is(.breadcrumb, .page-subtitle, .profile-text small, .panel-heading p, .setting-row small) {
+      color: var(--secondary-text);
+    }
+
+    .dashboard-shell :is(.profile-menu, .dropdown-menu),
+    .role-dashboard-shell :is(.profile-menu, .dropdown-menu) {
+      border-color: var(--line);
+      color: var(--primary-text);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard-shell .content-area,
+    .role-dashboard-shell .content-area {
+      color: var(--primary-text);
+      background: transparent;
+    }
+
+    .dashboard-shell :is(h1, h2, h3, h4),
+    .role-dashboard-shell :is(h1, h2, h3, h4),
+    .auth-page h1,
+    .page-heading h1 {
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    .dashboard-shell :is(.panel, .stat-card, .role-dashboard-panel, .settings-panel, .doctor-overview-card, .patient-panel, .available-slots, .telemedicine-appointments, .admin-card),
+    .role-dashboard-shell :is(.panel, .stat-card, .role-dashboard-panel, .settings-panel, .doctor-overview-card, .patient-panel, .available-slots, .telemedicine-appointments, .admin-card) {
+      border-color: var(--line);
+      color: var(--primary-text);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard-shell :is(.panel p, .panel small, .panel label, .role-dashboard-panel p, .settings-panel p, .doctor-overview-card small),
+    .role-dashboard-shell :is(.panel p, .panel small, .panel label, .role-dashboard-panel p, .settings-panel p, .doctor-overview-card small) {
+      color: var(--secondary-text);
+    }
+
+    .dashboard-shell :is(.panel-heading h2, .page-heading h1, .doctor-overview-card h2, .role-dashboard-greeting h2),
+    .role-dashboard-shell :is(.panel-heading h2, .page-heading h1, .doctor-overview-card h2, .role-dashboard-greeting h2) {
+      color: var(--navy);
+    }
+
+    .dashboard-shell :is(input, select, textarea),
+    .role-dashboard-shell :is(input, select, textarea) {
+      border-color: var(--line);
+      color: var(--primary-text);
+      background: var(--surface);
+    }
+
+    .dashboard-shell :is(.text-link, .role-overview-text-link),
+    .role-dashboard-shell :is(.text-link, .role-overview-text-link) {
+      color: var(--forest-green);
+    }
+
+    .dashboard-shell :is(.db-pill, .overview-status-pill, .role-dashboard-tag),
+    .role-dashboard-shell :is(.db-pill, .overview-status-pill, .role-dashboard-tag) {
+      border-color: rgba(20, 83, 45, 0.24);
+      color: var(--forest-green);
+      background: #E8F0EB;
+    }
+
+    .dashboard-shell .api-alert,
+    .dashboard-shell .form-error,
+    .auth-page .form-error {
+      border: 1px solid #E7B8B3;
+      color: #7A271A;
+      background: #FEF3F2;
+    }
+
+    .dashboard-shell .api-alert button {
+      border: 1px solid var(--forest-green);
+      color: #fff;
+      background: var(--forest-green);
+    }
+
+    .dashboard-shell .api-alert button:hover {
+      border-color: var(--deep-green);
+      background: var(--deep-green);
+    }
+
+    .dashboard-shell .api-success {
+      border-color: #A6D2B3 !important;
+      color: var(--forest-green) !important;
+      background: #ECF7EF !important;
+    }
+
+    .dashboard-shell :is(.role-dashboard-hero, .overview-care-strip),
+    .role-dashboard-shell :is(.role-dashboard-hero, .overview-care-strip) {
+      border-color: var(--line);
+      background: linear-gradient(120deg, #E8F0EB, #F7FAF8 72%);
+    }
+
+    .dashboard-shell .role-dashboard-hero h1,
+    .role-dashboard-shell .role-dashboard-hero h1 {
+      color: var(--forest-green);
+    }
+
+    .dashboard-shell .role-dashboard-hero h1 span,
+    .role-dashboard-shell .role-dashboard-hero h1 span {
+      color: var(--navy);
+    }
+
+    .dashboard-shell .stat-card > strong,
+    .role-dashboard-shell .stat-card > strong {
+      color: var(--forest-green);
+    }
+
+    .dashboard-shell :is(.section-overline, .role-dashboard-eyebrow),
+    .role-dashboard-shell :is(.section-overline, .role-dashboard-eyebrow) {
+      color: var(--forest-green);
+    }
+
+    .dashboard-shell .status-tag,
+    .role-dashboard-shell .status-tag {
+      border-color: var(--line);
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-shell .sidebar,
+      .role-dashboard-shell .sidebar {
+        box-shadow: 12px 0 30px rgba(16, 42, 67, 0.2);
       }
     }
   }
