@@ -32,7 +32,7 @@ async function providers(query = {}) {
   if (specialization) filter['doctorProfile.specialization'] = new RegExp(`^${escapeRegex(specialization)}$`, 'i');
   if (q) {
     const search = new RegExp(escapeRegex(q), 'i');
-    filter.$or = [{ name: search }, { 'doctorProfile.specialization': search }, { 'doctorProfile.expertise': search }];
+    filter.$or = [{ name: search }, { 'doctorProfile.department': search }, { 'doctorProfile.specialization': search }, { 'doctorProfile.expertise': search }];
   }
   if (query.minExperience !== undefined) {
     if (!/^\d{1,2}$/.test(String(query.minExperience)) || Number(query.minExperience) > 80) throw new ApiError(400, 'Minimum experience must be between 0 and 80 years');

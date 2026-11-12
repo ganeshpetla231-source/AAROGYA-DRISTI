@@ -44,14 +44,14 @@ export function TelemedicineAdminOverview({ onManageDoctors }) {
         <div className="panel-heading"><div><h3>{t('telemedicine.adminDoctors')}</h3><p>{t('telemedicine.adminDoctorHelp')}</p></div><button className="clinical-secondary" onClick={onManageDoctors}>{t('telemedicine.manageVerification')}</button></div>
         <div className="telemedicine-admin-table-wrap"><table className="telemedicine-admin-table">
           <thead><tr><th>{t('telemedicine.doctor')}</th><th>{t('telemedicine.specialization')}</th><th>{t('telemedicine.qualifications')}</th><th>{t('telemedicine.doctorAccount')}</th></tr></thead>
-          <tbody>{data.doctors.map(doctor => <tr key={doctor.id}><td>{doctor.name}</td><td>{doctor.specialization || '—'}</td><td>{doctor.qualifications.join(', ') || '—'}</td><td>{doctor.approvalStatus} · {doctor.isActive ? t('telemedicine.active') : t('telemedicine.inactive')} · {doctor.profileVerified ? t('telemedicine.verified') : t('telemedicine.unverified')}</td></tr>)}</tbody>
+          <tbody>{data.doctors.map(doctor => <tr key={doctor.id}><td>{doctor.name}</td><td>{[doctor.department, doctor.specialization].filter(Boolean).join(' · ') || '—'}</td><td>{doctor.qualifications.join(', ') || '—'}</td><td>{doctor.approvalStatus} · {doctor.isActive ? t('telemedicine.active') : t('telemedicine.inactive')} · {doctor.profileVerified ? t('telemedicine.verified') : t('telemedicine.unverified')}</td></tr>)}</tbody>
         </table></div>
       </div>
       <div className="telemedicine-admin-section panel">
         <div className="panel-heading"><div><h3>{t('telemedicine.adminAppointments')}</h3><p>{t('telemedicine.adminAppointmentHelp')}</p></div></div>
         <div className="telemedicine-admin-table-wrap"><table className="telemedicine-admin-table">
           <thead><tr><th>{t('telemedicine.patient')}</th><th>{t('telemedicine.doctor')}</th><th>{t('telemedicine.date')}</th><th>{t('telemedicine.appointmentStatus')}</th><th>{t('telemedicine.consultationStatus')}</th></tr></thead>
-          <tbody>{data.appointments.map(item => <tr key={item.id}><td>{item.patient?.name || '—'}{item.patient?.patientId ? ` · ${item.patient.patientId}` : ''}</td><td>{item.doctor?.name || '—'}{item.doctor?.specialization ? ` · ${item.doctor.specialization}` : ''}</td><td>{new Date(item.scheduledAt).toLocaleString(dateLocale)}</td><td>{item.status}</td><td>{item.consultationStatus}</td></tr>)}</tbody>
+          <tbody>{data.appointments.map(item => <tr key={item.id}><td>{item.patient?.name || '—'}{item.patient?.patientId ? ` · ${item.patient.patientId}` : ''}</td><td>{item.doctor?.name || '—'}{item.doctor?.department ? ` · ${item.doctor.department}` : ''}{item.doctor?.specialization ? ` · ${item.doctor.specialization}` : ''}</td><td>{new Date(item.scheduledAt).toLocaleString(dateLocale)}</td><td>{item.status}</td><td>{item.consultationStatus}</td></tr>)}</tbody>
         </table></div>
         {!data.appointments.length && <p className="telemedicine-empty">{t('telemedicine.noPast')}</p>}
       </div>

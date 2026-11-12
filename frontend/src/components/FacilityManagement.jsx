@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { oralHealthDepartments, specialtiesForDepartment } from '../data/oralHealthDepartments.js';
 import { Building2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Pencil, RefreshCw, Search, ShieldCheck, UserRound } from 'lucide-react';
 import {
   createAdminHospital, createFacilityDoctor, getAdminFacilitySummary, getAdminFacilities,
@@ -11,7 +12,7 @@ import {
 import './facility-management.css';
 
 const emptyDoctor = {
-  name: '', email: '', phone: '', registrationNumber: '', specialization: '',
+  name: '', email: '', phone: '', registrationNumber: '', department: '', specialization: '',
   qualifications: '', yearsExperience: '0', consultationFee: '0', biography: ''
 };
 
@@ -110,7 +111,7 @@ export function FacilityManagement({ role }) {
         const data = {
           name: doctor.name, email: doctor.email, phone: doctor.phone,
           doctorProfile: {
-            registrationNumber: doctor.registrationNumber, specialization: doctor.specialization,
+            registrationNumber: doctor.registrationNumber, department: doctor.department, specialization: doctor.specialization,
             qualifications: doctor.qualifications.split(',').map(value => value.trim()).filter(Boolean),
             yearsExperience: Number(doctor.yearsExperience), consultationFee: Number(doctor.consultationFee),
             biography: doctor.biography
@@ -124,13 +125,26 @@ export function FacilityManagement({ role }) {
         {[
           ['name', 'facility.doctorName', 'text'], ['email', 'facility.doctorEmail', 'email'],
           ['phone', 'facility.phone', 'tel'], ['registrationNumber', 'facility.doctorRegistrationNumber', 'text'],
-          ['specialization', 'facility.specialization', 'text'], ['qualifications', 'facility.qualifications', 'text'],
+          ['qualifications', 'facility.qualifications', 'text'],
           ['yearsExperience', 'facility.yearsExperience', 'number'], ['consultationFee', 'facility.consultationFee', 'number']
         ].map(([field, label, type]) => <label key={field}>{t(label)}
           <input required type={type} min={type === 'number' ? '0' : undefined}
             step={field === 'yearsExperience' ? '1' : field === 'consultationFee' ? '0.01' : undefined}
             value={doctor[field]} onChange={event => update(setDoctor, field, event.target.value)}/>
         </label>)}
+        <label>{t('doctorProfile.department')}<select required value={doctor.department} onChange={event => {
+          const department = event.target.value;
+          update(setDoctor, 'department', department);
+          update(setDoctor, 'specialization', specialtiesForDepartment(department)[0] || '');
+        }}>
+          <option value="">{t('doctorProfile.selectDepartment')}</option>
+          {oralHealthDepartments.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
+        </select></label>
+        <label>{t('doctorProfile.specialization')}<select required disabled={!doctor.department} value={doctor.specialization}
+          onChange={event => update(setDoctor, 'specialization', event.target.value)}>
+          <option value="">{t('doctorProfile.selectSpecialization')}</option>
+          {specialtiesForDepartment(doctor.department).map(value => <option key={value} value={value}>{value}</option>)}
+        </select></label>
         <label>{t('facility.biography')}<textarea required maxLength={2000} value={doctor.biography}
           onChange={event => update(setDoctor, 'biography', event.target.value)}/></label>
         <p>{t('facility.qualificationsHelp')}</p>

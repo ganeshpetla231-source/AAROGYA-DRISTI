@@ -11,7 +11,7 @@ const specialtyTermsByCategory = {
 
 function providerSpecialtyText(provider) {
   const profile = provider.profile || provider.doctorProfile || {};
-  return [profile.specialization, ...(profile.expertise || [])].filter(Boolean).join(' ').toLowerCase();
+  return [profile.department, profile.specialization, ...(profile.expertise || [])].filter(Boolean).join(' ').toLowerCase();
 }
 
 export function recommendDoctors(category, providers, limit = 3) {

@@ -255,10 +255,16 @@ async function updateDoctorProfile(actor, input = {}) {
     if (!profile || typeof profile !== 'object' || Array.isArray(profile) || !Object.keys(profile).length) {
       throw new ApiError(400, 'Provide valid professional profile fields');
     }
-    const profileFields = new Set(['specialization', 'yearsExperience', 'expertise', 'consultationFee', 'biography']);
+    const profileFields = new Set(['department', 'specialization', 'yearsExperience', 'expertise', 'consultationFee', 'biography']);
     const unknownProfileField = Object.keys(profile).find(field => !profileFields.has(field));
     if (unknownProfileField) throw new ApiError(400, `Unsupported professional profile field: ${unknownProfileField}`);
 
+    if (profile.department !== undefined) {
+      if (typeof profile.department !== 'string' || !profile.department.trim() || profile.department.trim().length > 120) {
+        throw new ApiError(400, 'Enter a valid department up to 120 characters');
+      }
+      user.set('doctorProfile.department', profile.department.trim());
+    }
     if (profile.specialization !== undefined) {
       if (typeof profile.specialization !== 'string' || !profile.specialization.trim() || profile.specialization.trim().length > 120) {
         throw new ApiError(400, 'Enter a valid specialization up to 120 characters');

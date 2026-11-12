@@ -7,7 +7,7 @@ const { hasValidSignature } = require('../utils/fileSignatures');
 const fileStorage = require('./fileStorageService');
 
 const managerFields = new Set(['registrationNumber', 'facilityType', 'village', 'mandal', 'district', 'address', 'phone', 'postalCode', 'coordinates', 'workingHours', 'beds', 'services']);
-const profileFields = new Set(['qualifications', 'registrationNumber', 'specialization', 'yearsExperience', 'expertise', 'consultationFee', 'biography']);
+const profileFields = new Set(['qualifications', 'registrationNumber', 'department', 'specialization', 'yearsExperience', 'expertise', 'consultationFee', 'biography']);
 const limits = { registrationNumber: 100, facilityType: 100, village: 120, mandal: 120, district: 120, address: 500, phone: 30, postalCode: 6, workingHours: 500 };
 
 function assertManager(user) {
@@ -98,6 +98,12 @@ function cleanDoctorProfile(input = {}) {
       throw new ApiError(400, `Enter a valid doctor ${field}`);
     }
     profile[field] = input[field].trim();
+  }
+  if (input.department !== undefined) {
+    if (typeof input.department !== 'string' || !input.department.trim() || input.department.trim().length > 120) {
+      throw new ApiError(400, 'Enter a valid doctor department');
+    }
+    profile.department = input.department.trim();
   }
   if (!Array.isArray(input.qualifications) || !input.qualifications.length || input.qualifications.length > 12 ||
       input.qualifications.some(value => typeof value !== 'string' || !value.trim() || value.trim().length > 120)) {

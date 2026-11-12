@@ -33,7 +33,7 @@ async function authorizedAppointment(id, user) {
   return appointment;
 }
 function populatedAppointments(query) {
-  return query.sort({ scheduledAt: -1 }).populate('patient', 'patientId name user').populate('provider', 'name role doctorProfile.specialization doctorProfile.qualifications doctorProfile.yearsExperience doctorProfile.profileVerifiedAt').populate('hospital', 'name village').lean();
+  return query.sort({ scheduledAt: -1 }).populate('patient', 'patientId name user').populate('provider', 'name role doctorProfile.department doctorProfile.specialization doctorProfile.qualifications doctorProfile.yearsExperience doctorProfile.profileVerifiedAt').populate('hospital', 'name village').lean();
 }
 async function verifiedDoctorIds() {
   return User.find({
@@ -83,7 +83,7 @@ async function availability(query = {}) {
     filter.doctor = query.doctor;
   }
   const items = await DoctorAvailability.find(filter).sort({ startsAt: 1 }).limit(100)
-    .populate('doctor', 'name role doctorProfile.specialization doctorProfile.qualifications doctorProfile.yearsExperience doctorProfile.biography doctorProfile.profileVerifiedAt hospital')
+    .populate('doctor', 'name role doctorProfile.department doctorProfile.specialization doctorProfile.qualifications doctorProfile.yearsExperience doctorProfile.biography doctorProfile.profileVerifiedAt hospital')
     .lean();
   return { items, total: items.length };
 }
@@ -297,10 +297,10 @@ async function adminOverview() {
     Appointment.find({ visitMode: 'Video' }).sort({ scheduledAt: -1 }).limit(100)
       .select('patient provider scheduledAt status visitMode createdAt')
       .populate('patient', 'patientId name')
-      .populate('provider', 'name doctorProfile.specialization')
+      .populate('provider', 'name doctorProfile.department doctorProfile.specialization')
       .lean(),
     User.find({ role: 'doctor' }).sort({ name: 1 }).limit(200)
-      .select('name approvalStatus isActive doctorProfile.specialization doctorProfile.qualifications doctorProfile.registrationNumber doctorProfile.profileVerifiedAt')
+      .select('name approvalStatus isActive doctorProfile.department doctorProfile.specialization doctorProfile.qualifications doctorProfile.registrationNumber doctorProfile.profileVerifiedAt')
       .lean(),
     DoctorAvailability.countDocuments({ status: 'Open', startsAt: { $gt: new Date() } })
   ]);
@@ -319,7 +319,7 @@ async function adminOverview() {
     appointments: appointments.map(item => ({
       id: item._id,
       patient: item.patient ? { id: item.patient._id, patientId: item.patient.patientId, name: item.patient.name } : null,
-      doctor: item.provider ? { id: item.provider._id, name: item.provider.name, specialization: item.provider.doctorProfile?.specialization || '' } : null,
+      doctor: item.provider ? { id: item.provider._id, name: item.provider.name, department: item.provider.doctorProfile?.department || '', specialization: item.provider.doctorProfile?.specialization || '' } : null,
       scheduledAt: item.scheduledAt,
       status: item.status,
       consultationStatus: statusByAppointment.get(String(item._id)) || 'Not started',
@@ -328,6 +328,7 @@ async function adminOverview() {
     doctors: doctors.map(item => ({
       id: item._id,
       name: item.name,
+      department: item.doctorProfile?.department || '',
       specialization: item.doctorProfile?.specialization || '',
       qualifications: item.doctorProfile?.qualifications || [],
       registrationNumber: item.doctorProfile?.registrationNumber || '',

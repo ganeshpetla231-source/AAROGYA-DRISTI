@@ -468,16 +468,18 @@ test('security API and QR integration', async t => {
       headers: { ...authHeaders(session), 'content-type': 'application/json' },
       body: JSON.stringify({
         name: 'Profile Test Doctor Updated',
-        doctorProfile: { specialization: 'Oral medicine', yearsExperience: 8, expertise: ['Oral lesions'], consultationFee: 250, biography: 'A short profile.' }
+        doctorProfile: { department: 'Oral Medicine and Radiology', specialization: 'Oral Medicine', yearsExperience: 8, expertise: ['Oral lesions'], consultationFee: 250, biography: 'A short profile.' }
       })
     });
     assert.equal(updated.status, 200);
     const payload = await updated.json();
     assert.equal(payload.data.user.name, 'Profile Test Doctor Updated');
-    assert.equal(payload.data.user.doctorProfile.specialization, 'Oral medicine');
+    assert.equal(payload.data.user.doctorProfile.department, 'Oral Medicine and Radiology');
+    assert.equal(payload.data.user.doctorProfile.specialization, 'Oral Medicine');
     assert.deepEqual(payload.data.user.doctorProfile.expertise, ['Oral lesions']);
     const savedDoctor = await models.User.findById(doctor._id).select('name doctorProfile').lean();
     assert.equal(savedDoctor.doctorProfile.yearsExperience, 8);
+    assert.equal(savedDoctor.doctorProfile.department, 'Oral Medicine and Radiology');
     testAuditIds.push(...await models.AuditLog.find({ resourceId: doctor._id, action: 'doctor.profile_updated' }).distinct('_id'));
 
     const protectedField = await fetch(`${base}/api/auth/profile`, {

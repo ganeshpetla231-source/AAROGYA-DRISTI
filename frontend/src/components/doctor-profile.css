@@ -2,10 +2,16 @@
 .doctor-profile-form{margin-top:16px}
 .doctor-profile-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .doctor-profile-fields label{display:grid;gap:6px;color:#91a7ba;font-size:9px}
-.doctor-profile-fields input,.doctor-profile-fields textarea{width:100%;padding:9px 10px;border:1px solid #2b4054;border-radius:7px;outline:none;color:#dce8f1;background:#0a1928;font:inherit;font-size:10px}
-.doctor-profile-fields input:focus,.doctor-profile-fields textarea:focus{border-color:#4ac9d2;box-shadow:0 0 0 2px #4ac9d21a}
+.doctor-profile-fields input,.doctor-profile-fields select,.doctor-profile-fields textarea{width:100%;padding:9px 10px;border:1px solid #2b4054;border-radius:7px;outline:none;color:#dce8f1;background:#0a1928;font:inherit;font-size:10px}
+.doctor-profile-fields input:focus,.doctor-profile-fields select:focus,.doctor-profile-fields textarea:focus{border-color:#4ac9d2;box-shadow:0 0 0 2px #4ac9d21a}
+.doctor-profile-fields select[multiple]{min-height:110px}
 .doctor-profile-fields textarea{resize:vertical;line-height:1.55}
+.doctor-profile-expertise{min-width:0;margin:0;padding:0;border:0}
+.doctor-profile-expertise legend{margin-bottom:8px;color:#91a7ba;font-size:9px}
+.doctor-profile-expertise-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.doctor-profile-expertise-list label{display:flex!important;grid-template-columns:none!important;align-items:center;gap:7px}
+.doctor-profile-expertise-list input{width:auto;margin:0;accent-color:#4ac9d2}
 .doctor-profile-wide{grid-column:1/-1}
 .doctor-profile-submit{display:block;margin:14px 0 0 auto;color:#a8e7e7}
 .doctor-profile-saved{color:#77d8b0;font-size:9px}
-@media(max-width:600px){.doctor-profile-fields{grid-template-columns:1fr}.doctor-profile-wide{grid-column:auto}}
+@media(max-width:600px){.doctor-profile-fields{grid-template-columns:1fr}.doctor-profile-wide{grid-column:auto}.doctor-profile-expertise-list{grid-template-columns:1fr}}

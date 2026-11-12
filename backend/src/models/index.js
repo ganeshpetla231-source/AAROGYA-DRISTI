@@ -19,6 +19,7 @@ const userSchema = new Schema({
   doctorProfile: {
     qualifications: { type: [String], default: [], validate: values => values.length <= 12 },
     registrationNumber: { type: String, trim: true, maxlength: 80 },
+    department: { type: String, trim: true, maxlength: 120 },
     specialization: { type: String, trim: true, maxlength: 120 },
     yearsExperience: { type: Number, min: 0, max: 80 },
     expertise: { type: [String], default: [], validate: values => values.length <= 20 },

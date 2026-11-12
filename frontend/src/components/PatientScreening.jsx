@@ -336,7 +336,7 @@ export function PatientScreening({ historyOnly = false, onNavigate }) {
           <span>{t('patientScreening.chooseDoctor')}</span>
           <select value={providerId} onChange={event => setProviderId(event.target.value)}>
             <option value="">{t('patientScreening.chooseDoctorPlaceholder')}</option>
-            {providers.map(doctor => <option key={doctor.id} value={doctor.id}>{doctor.name} · {doctor.profile?.specialization || t('patientScreening.doctorLabel')}{doctor.hospital?.name ? ` · ${doctor.hospital.name}` : ''}</option>)}
+            {providers.map(doctor => <option key={doctor.id} value={doctor.id}>{doctor.name} · {doctor.profile?.department || doctor.profile?.specialization || t('patientScreening.doctorLabel')}{doctor.hospital?.name ? ` · ${doctor.hospital.name}` : ''}</option>)}
           </select>
         </label>
         {!loading && <p className="patient-screening-assignment-note">{providers.length
@@ -369,7 +369,8 @@ export function PatientScreening({ historyOnly = false, onNavigate }) {
         {recommendations.doctors.length > 0
           ? <div className="patient-screening-doctor-grid">{recommendations.doctors.map(doctor => <article key={doctor.id}>
             <strong>{doctor.name}</strong>
-            <span>{doctor.profile?.specialization || t('patientScreening.generalDepartment')}</span>
+            <span>{doctor.profile?.department || doctor.profile?.specialization || t('patientScreening.generalDepartment')}</span>
+            {doctor.profile?.specialization && doctor.profile.specialization !== doctor.profile.department && <small>{doctor.profile.specialization}</small>}
             {doctor.hospital?.name && <small>{doctor.hospital.name}</small>}
           </article>)}</div>
           : latestCategory !== 'insufficient-quality' && <p>{t('patientScreening.noRecommendedDoctors')}</p>}

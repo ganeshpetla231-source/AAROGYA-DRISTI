@@ -56,15 +56,16 @@ export function PatientAppointments() {
   useEffect(() => { load(); }, [load]);
 
   const departments = useMemo(() => [...new Set(
-    providers.map(provider => provider.profile?.specialization?.trim()).filter(Boolean)
+    providers.map(provider => (provider.profile?.department || provider.profile?.specialization)?.trim()).filter(Boolean)
   )].sort((a, b) => a.localeCompare(b)), [providers]);
   const matchingDoctors = useMemo(() => {
     const query = search.trim().toLowerCase();
     return providers.filter(provider => {
       const profile = provider.profile || {};
-      const matchesDepartment = !department || profile.specialization === department;
+      const matchesDepartment = !department || (profile.department || profile.specialization) === department;
       const searchable = [
         provider.name,
+        profile.department,
         profile.specialization,
         ...(profile.expertise || []),
         ...(profile.qualifications || []),
@@ -146,7 +147,8 @@ export function PatientAppointments() {
         : matchingDoctors.length ? <div className="available-slot-grid">{matchingDoctors.map(doctor => <article key={doctor.id}>
           <span className="video-slot-icon">⚕</span>
           <b>{doctor.name}</b>
-          <small>{doctor.profile?.specialization || t('clinicAppointments.generalDepartment')}</small>
+          <small>{doctor.profile?.department || doctor.profile?.specialization || t('clinicAppointments.generalDepartment')}</small>
+          {doctor.profile?.specialization && doctor.profile.specialization !== doctor.profile.department && <small>{doctor.profile.specialization}</small>}
           <small>{doctor.hospital?.name || t('clinicAppointments.hospitalNotListed')}</small>
           {(doctor.profile?.qualifications || []).length > 0 && <small>{doctor.profile.qualifications.join(', ')}</small>}
           <button className="auth-submit" type="button" disabled={busy} onClick={() => openBooking(doctor)}>{t('clinicAppointments.requestAppointment')} →</button>
@@ -174,7 +176,7 @@ export function PatientAppointments() {
     {selectedDoctor && <div className="telemedicine-consent-backdrop" role="presentation"><section className="panel telemedicine-consent-dialog clinic-booking-dialog" role="dialog" aria-modal="true" aria-labelledby="clinic-booking-title">
       <button type="button" className="text-link telemedicine-dialog-close" onClick={() => setSelectedDoctor(null)} aria-label={t('telemedicine.close')}>×</button>
       <h2 id="clinic-booking-title">{t('clinicAppointments.requestTitle')}</h2>
-      <p>{selectedDoctor.name} · {selectedDoctor.profile?.specialization || t('clinicAppointments.generalDepartment')}</p>
+      <p>{selectedDoctor.name} · {selectedDoctor.profile?.department || selectedDoctor.profile?.specialization || t('clinicAppointments.generalDepartment')}{selectedDoctor.profile?.specialization && selectedDoctor.profile.specialization !== selectedDoctor.profile.department ? ` · ${selectedDoctor.profile.specialization}` : ''}</p>
       <form onSubmit={submitBooking}>
         <label>{t('clinicAppointments.preferredDateTime')}<input type="datetime-local" required min={localDateTime(Date.now())} max={localDateTime(Date.now() + 90 * 24 * 60 * 60 * 1000)} value={scheduledAt} onChange={event => setScheduledAt(event.target.value)}/></label>
         <label>{t('telemedicine.consultationReason')}<textarea required maxLength={1000} value={reason} onChange={event => setReason(event.target.value)}/></label>

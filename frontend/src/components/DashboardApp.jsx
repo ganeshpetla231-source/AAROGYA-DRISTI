@@ -10,6 +10,7 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { navItems, qrNavItems, screeningNavItems, voiceNavItems, clinicalNavItems, mapsNavItems, notificationNavItems, analyticsNavItems, roles } from '../data/demoData.js';
 import { ASR_MANDALS } from '../data/asrMandals.js';
+import { departmentForSpecialty, oralHealthDepartments, oralHealthSpecialties, specialtiesForDepartment } from '../data/oralHealthDepartments.js';
 import { createResource, getDashboardData, getPatientProfilePhoto, updateResource } from '../services/api.js';
 import { indiaTodayDate, patientAgeFromDateOfBirth } from '../utils/patientAge.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -997,28 +998,51 @@ function Settings({ role, account, onUpdateProfile }) {
 function DoctorProfileSettings({ account, onUpdateProfile }) {
   const { t: translate } = useTranslation();
   const profile = account.doctorProfile || {};
+  const initialDepartment = profile.department || departmentForSpecialty(profile.specialization || '');
   const [form, setForm] = useState(() => ({
     name: account.name || '',
+    department: initialDepartment,
     specialization: profile.specialization || '',
     yearsExperience: profile.yearsExperience == null ? '' : String(profile.yearsExperience),
-    expertise: (profile.expertise || []).join(', '),
+    expertise: profile.expertise || [],
     consultationFee: profile.consultationFee == null ? '' : String(profile.consultationFee),
     biography: profile.biography || ''
   }));
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [saved, setSaved] = useState(false);
   useEffect(() => {
     const currentProfile = account.doctorProfile || {};
+    const currentDepartment = currentProfile.department || departmentForSpecialty(currentProfile.specialization || '');
     setForm({
       name: account.name || '',
+      department: currentDepartment,
       specialization: currentProfile.specialization || '',
       yearsExperience: currentProfile.yearsExperience == null ? '' : String(currentProfile.yearsExperience),
-      expertise: (currentProfile.expertise || []).join(', '),
+      expertise: currentProfile.expertise || [],
       consultationFee: currentProfile.consultationFee == null ? '' : String(currentProfile.consultationFee),
       biography: currentProfile.biography || ''
     });
   }, [account]);
   function updateField(event) {
     setForm(current => ({ ...current, [event.target.name]: event.target.value }));
+    setSaved(false);
+  }
+  function updateDepartment(event) {
+    const department = event.target.value;
+    const options = specialtiesForDepartment(department);
+    setForm(current => ({
+      ...current,
+      department,
+      specialization: options.includes(current.specialization) ? current.specialization : options[0] || ''
+    }));
+    setSaved(false);
+  }
+  function updateExpertise(value, checked) {
+    setForm(current => ({
+      ...current,
+      expertise: checked
+        ? [...new Set([...current.expertise, value])]
+        : current.expertise.filter(item => item !== value)
+    }));
     setSaved(false);
   }
   async function submit(event) {
@@ -1030,9 +1054,10 @@ function DoctorProfileSettings({ account, onUpdateProfile }) {
       await onUpdateProfile({
         name: form.name,
         doctorProfile: {
+          department: form.department,
           specialization: form.specialization,
           yearsExperience: form.yearsExperience === '' ? null : Number(form.yearsExperience),
-          expertise: form.expertise.split(',').map(item => item.trim()).filter(Boolean),
+          expertise: form.expertise,
           consultationFee: form.consultationFee === '' ? null : Number(form.consultationFee),
           biography: form.biography
         }
@@ -1049,10 +1074,27 @@ function DoctorProfileSettings({ account, onUpdateProfile }) {
     <form className="doctor-profile-form" onSubmit={submit}>
       <div className="doctor-profile-fields">
         <label>{translate('doctorProfile.name')}<input name="name" value={form.name} onChange={updateField} required maxLength={120}/></label>
-        <label>{translate('doctorProfile.specialization')}<input name="specialization" value={form.specialization} onChange={updateField} required maxLength={120}/></label>
+        <label>{translate('doctorProfile.department')}<select name="department" value={form.department} onChange={updateDepartment} required>
+          <option value="">{translate('doctorProfile.selectDepartment')}</option>
+          {form.department && !oralHealthDepartments.some(item => item.name === form.department) && <option value={form.department}>{form.department}</option>}
+          {oralHealthDepartments.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
+        </select></label>
+        <label>{translate('doctorProfile.specialization')}<select name="specialization" value={form.specialization} onChange={updateField} required disabled={!form.department}>
+          <option value="">{translate('doctorProfile.selectSpecialization')}</option>
+          {form.specialization && !specialtiesForDepartment(form.department).includes(form.specialization) && <option value={form.specialization}>{form.specialization}</option>}
+          {specialtiesForDepartment(form.department).map(value => <option key={value} value={value}>{value}</option>)}
+        </select></label>
         <label>{translate('doctorProfile.yearsExperience')}<input name="yearsExperience" type="number" value={form.yearsExperience} onChange={updateField} min="0" max="80" step="1"/></label>
         <label>{translate('doctorProfile.consultationFee')}<input name="consultationFee" type="number" value={form.consultationFee} onChange={updateField} min="0" max="1000000" step="0.01"/></label>
-        <label className="doctor-profile-wide">{translate('doctorProfile.expertise')}<input name="expertise" value={form.expertise} onChange={updateField} maxLength={2400}/></label>
+        <fieldset className="doctor-profile-wide doctor-profile-expertise">
+          <legend>{translate('doctorProfile.expertise')}</legend>
+          <div className="doctor-profile-expertise-list">
+            {[...new Set([...form.expertise, ...oralHealthSpecialties])].map(value => <label key={value}>
+              <input type="checkbox" checked={form.expertise.includes(value)} onChange={event => updateExpertise(value, event.target.checked)}/>
+              <span>{value}</span>
+            </label>)}
+          </div>
+        </fieldset>
         <label className="doctor-profile-wide">{translate('doctorProfile.biography')}<textarea name="biography" value={form.biography} onChange={updateField} maxLength={2000} rows={4}/></label>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}

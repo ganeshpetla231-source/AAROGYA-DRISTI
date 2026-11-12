@@ -14,6 +14,17 @@ test('screening category prefers verified doctors in related departments', () =>
   assert.equal(result.doctors[0].id, 'oral-medicine');
 });
 
+test('department alone can match a screening recommendation', () => {
+  const doctors = [
+    { id: 'specialist', name: 'Oral Medicine Doctor', profile: { department: 'Oral Medicine and Radiology' } }
+  ];
+
+  const result = recommendDoctors('possible-white-patch', doctors);
+
+  assert.equal(result.matched, true);
+  assert.equal(result.doctors[0].id, 'specialist');
+});
+
 test('recommendations fall back to listed verified doctors when no department matches', () => {
   const doctors = [
     { id: 'b', name: 'Doctor B', profile: { specialization: 'Other specialty' } },

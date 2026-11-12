@@ -87,7 +87,7 @@ async function get(id) {
     User.findOne({ role: 'hospital', hospital: hospital._id })
       .select('name email phone staffId').lean(),
     User.find({ role: 'doctor', hospital: hospital._id })
-      .select('name email phone staffId approvalStatus isActive doctorProfile.specialization doctorProfile.qualifications doctorProfile.registrationNumber doctorProfile.yearsExperience')
+      .select('name email phone staffId approvalStatus isActive doctorProfile.department doctorProfile.specialization doctorProfile.qualifications doctorProfile.registrationNumber doctorProfile.yearsExperience')
       .sort({ name: 1 }).limit(200).lean(),
     HealthcareWorker.find({ facility: hospital._id })
       .select('name email role designation phone staffId employmentStatus mandal village district joinedAt')
