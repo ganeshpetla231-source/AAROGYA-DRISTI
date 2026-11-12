@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analyzePatientScreening, getMyScreenings, getScreeningImage, getVerifiedProviders } from '../services/api.js';
+import { recommendDoctors } from '../utils/doctorRecommendations.js';
 import './patient-screening.css';
 
 const maxImageBytes = 8 * 1024 * 1024;
@@ -41,7 +42,7 @@ function ScreeningHistoryImage({ id, alt }) {
   </p>;
 }
 
-export function PatientScreening({ historyOnly = false }) {
+export function PatientScreening({ historyOnly = false, onNavigate }) {
   const { t, i18n } = useTranslation();
   const [history, setHistory] = useState([]);
   const [providers, setProviders] = useState([]);
@@ -58,6 +59,11 @@ export function PatientScreening({ historyOnly = false }) {
   const streamRef = useRef(null);
   const cameraRequestRef = useRef(0);
   const [imagePreview, setImagePreview] = useState('');
+  const latestCategory = latest?.screening?.aiResult?.category || latest?.screening?.category;
+  const recommendations = useMemo(
+    () => latestCategory ? recommendDoctors(latestCategory, providers) : { matched: false, doctors: [] },
+    [latestCategory, providers]
+  );
 
   useEffect(() => {
     if (!file) {
@@ -353,6 +359,25 @@ export function PatientScreening({ historyOnly = false }) {
       <h3>{t('patientScreening.resultsTitle')}</h3>
       <p className="patient-screening-status">{statusLabel(latest.screening.aiResult?.category || latest.screening.category)}</p>
       {renderReport(latest.screening, latest.imageUrl, 'latest')}
+      <section className="patient-screening-doctor-suggestions" aria-labelledby="patient-screening-doctor-suggestions-title">
+        <h3 id="patient-screening-doctor-suggestions-title">{t('patientScreening.recommendationTitle')}</h3>
+        <p>{latestCategory === 'insufficient-quality'
+          ? t('patientScreening.recommendationQuality')
+          : recommendations.matched
+            ? t('patientScreening.recommendationMatched')
+            : t('patientScreening.recommendationFallback')}</p>
+        {recommendations.doctors.length > 0
+          ? <div className="patient-screening-doctor-grid">{recommendations.doctors.map(doctor => <article key={doctor.id}>
+            <strong>{doctor.name}</strong>
+            <span>{doctor.profile?.specialization || t('patientScreening.generalDepartment')}</span>
+            {doctor.hospital?.name && <small>{doctor.hospital.name}</small>}
+          </article>)}</div>
+          : latestCategory !== 'insufficient-quality' && <p>{t('patientScreening.noRecommendedDoctors')}</p>}
+        <div className="patient-screening-doctor-actions">
+          <button type="button" className="clinical-secondary" onClick={() => onNavigate?.('appointments')}>{t('patientScreening.bookClinicAppointment')}</button>
+          <button type="button" className="clinical-secondary" onClick={() => onNavigate?.('video-consultation')}>{t('patientScreening.bookVideoConsultation')}</button>
+        </div>
+      </section>
     </section>}
     </>}
 

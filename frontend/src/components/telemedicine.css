@@ -35,3 +35,12 @@
   .telemedicine-doctor-search-control { min-height: 46px; padding-inline: .75rem; }
   .telemedicine-doctor-search-control input { min-height: 44px; font-size: .9rem; }
 }
+.clinic-appointments-workspace { color: #17344b; }
+.clinic-doctor-filters { display: grid; grid-template-columns: minmax(12rem,.7fr) minmax(18rem,1.3fr); gap: 1rem; align-items: end; }
+.clinic-doctor-filters > label:not(.telemedicine-doctor-search) { display: grid; gap: .45rem; color: #23384a; font-size: .9rem; font-weight: 600; }
+.clinic-doctor-filters select { min-height: 48px; padding: .65rem .8rem; border: 1px solid #d5dde5; border-radius: 8px; color: #1f2937; background: #fff; font: inherit; }
+.clinic-appointment-note { margin: .5rem 0 0; color: #52677b; font-size: .9rem; line-height: 1.5; }
+.clinic-booking-dialog form > label:not(.telemedicine-consent-check) { display: grid; gap: .45rem; }
+.clinic-booking-dialog input[type="datetime-local"], .clinic-booking-dialog textarea { width: 100%; min-height: 42px; padding: .65rem .75rem; border: 1px solid #d5dde5; border-radius: 8px; color: #1f2937; background: #fff; font: inherit; }
+.clinic-booking-dialog textarea { min-height: 80px; resize: vertical; }
+@media (max-width: 640px) { .clinic-doctor-filters { grid-template-columns: 1fr; } }

@@ -11,7 +11,7 @@ import {
   saveConsultationNotes, scheduleClinicalFollowup, updateTelemedicineAppointment
 } from '../services/api.js';
 
-export function TelemedicineWorkspace({ language = 'en' }) {
+export function TelemedicineWorkspace({ language = 'en', mode = 'all' }) {
   const { t } = useTranslation();
   const auth = useAuth();
   const doctor = auth.user.role === 'doctor';
@@ -23,6 +23,8 @@ export function TelemedicineWorkspace({ language = 'en' }) {
   const [bookingDetails, setBookingDetails] = useState({ consultationReason: '', symptoms: '', consentGranted: false });
   const [consentBusy, setConsentBusy] = useState(false), [callConsented, setCallConsented] = useState(false);
   const dateLabel = value => new Date(value).toLocaleString(language === 'te' ? 'te-IN' : language === 'hi' ? 'hi-IN' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  const isVideoVisit = appointment => appointment.visitMode === 'Video' ||
+    (!appointment.visitMode && String(appointment.type || '').toLowerCase().includes('telemedicine'));
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
@@ -40,8 +42,9 @@ export function TelemedicineWorkspace({ language = 'en' }) {
     });
     return () => socket.disconnect();
   }, [load]);
-  const upcoming = useMemo(() => appointments.filter(item => ['Upcoming', 'Confirmed'].includes(item.status)).sort((a,b) => new Date(a.scheduledAt)-new Date(b.scheduledAt)), [appointments]);
-  const past = useMemo(() => appointments.filter(item => ['Completed', 'Cancelled', 'Declined'].includes(item.status)).sort((a,b) => new Date(b.scheduledAt)-new Date(a.scheduledAt)), [appointments]);
+  const visibleAppointments = mode === 'video' && !doctor ? appointments.filter(isVideoVisit) : appointments;
+  const upcoming = useMemo(() => visibleAppointments.filter(item => ['Upcoming', 'Confirmed'].includes(item.status)).sort((a,b) => new Date(a.scheduledAt)-new Date(b.scheduledAt)), [visibleAppointments]);
+  const past = useMemo(() => visibleAppointments.filter(item => ['Completed', 'Cancelled', 'Declined'].includes(item.status)).sort((a,b) => new Date(b.scheduledAt)-new Date(a.scheduledAt)), [visibleAppointments]);
 
   async function act(fn, successText) { setBusy(true); setError(''); setSuccess(''); try { await fn(); setSuccess(successText); await load(); } catch (failure) { setError(failure.message); } finally { setBusy(false); } }
   async function publishAvailability(event) {
@@ -83,7 +86,6 @@ export function TelemedicineWorkspace({ language = 'en' }) {
   }
   const patientName = appointment => appointment.patient?.name || t('telemedicine.patient');
   const doctorName = appointment => appointment.provider?.name || t('telemedicine.doctor');
-  const isVideoVisit = appointment => appointment.visitMode === 'Video' || String(appointment.type || '').toLowerCase().includes('telemedicine');
   const visibleSlots = availability.filter(slot => {
     if (doctor) return String(slot.doctor?._id) === String(auth.user.id);
     const profile = slot.doctor?.doctorProfile || {};

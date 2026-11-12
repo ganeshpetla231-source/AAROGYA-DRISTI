@@ -131,6 +131,7 @@ export async function createDoctorAvailability(data) { return payload(await api.
 export async function deleteDoctorAvailability(id) { return payload(await api.delete(`/telemedicine/availability/${id}`)); }
 export async function getTelemedicineAppointments() { return payload(await api.get('/telemedicine/appointments')); }
 export async function bookTelemedicineAppointment(availabilityId, details) { return payload(await api.post('/telemedicine/appointments', { availabilityId, ...details })); }
+export async function bookClinicAppointment(details) { return payload(await api.post('/telemedicine/appointments/clinic', details)); }
 export async function recordTelemedicineConsent(id) { return payload(await api.post(`/telemedicine/appointments/${id}/consent`, { granted: true })); }
 export async function updateTelemedicineAppointment(id, action, data = {}) { return payload(await api.patch(`/telemedicine/appointments/${id}/${action}`, data)); }
 export async function getTelemedicineRoom(id) { return payload(await api.get(`/telemedicine/appointments/${id}/room`)); }

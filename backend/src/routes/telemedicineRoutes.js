@@ -9,6 +9,7 @@ router.post('/availability', authorize('doctor'), controller.createAvailability)
 router.delete('/availability/:id', authorize('doctor'), controller.removeAvailability);
 router.get('/appointments', authorize('patient', 'doctor'), controller.appointments);
 router.get('/admin/overview', authorize('admin'), controller.adminOverview);
+router.post('/appointments/clinic', authorize('patient'), controller.bookClinic);
 router.post('/appointments', authorize('patient'), controller.book);
 router.post('/appointments/:id/consent', authorize('patient', 'doctor'), controller.consent);
 router.get('/appointments/:id/room', authorize('patient', 'doctor'), controller.room);

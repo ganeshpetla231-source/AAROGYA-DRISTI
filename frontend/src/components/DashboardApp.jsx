@@ -20,6 +20,7 @@ import { ClinicalWorkspace } from './ClinicalWorkspace.jsx';
 import { TelemedicineAdminOverview } from './TelemedicineAdminOverview.jsx';
 import { MapsPage } from './MapsPage.jsx';
 import { TelemedicineWorkspace } from './Telemedicine.jsx';
+import { PatientAppointments } from './PatientAppointments.jsx';
 import { AnalyticsDashboard } from './AnalyticsDashboard.jsx';
 import { NotificationBell, NotificationsPage } from './Notifications.jsx';
 import { LanguageSelector } from './LanguageSelector.jsx';
@@ -71,6 +72,8 @@ const patientMoreOrder = [
   'patient-profile', 'qr-card', 'education', 'government-directory', 'education-videos',
   'voice-assistant', 'voice-history', 'referrals', 'maps'
 ];
+const isVideoAppointment = appointment => appointment.visitMode === 'Video' ||
+  (!appointment.visitMode && String(appointment.type || '').toLowerCase().includes('telemedicine'));
 
 export function DashboardApp({ routeRole, initialPage, initialAction, initialAuthMode, onHome, onAuthenticated, onLogin }) {
   const auth = useAuth();
@@ -524,7 +527,8 @@ function Dashboard({ role, account, initialPage, initialAction, onHome, onSignOu
           : page === 'government-directory' && role.id === 'admin' ? <AdminFacilitiesPage/>
           : page === 'government-directory' ? <GovernmentDirectory/>
           : page === 'patient-profile' ? <PatientDashboard/>
-          : page === 'patient-screening' && role.id === 'patient' ? <PatientScreening/>
+          : page === 'appointments' && role.id === 'patient' ? <PatientAppointments/>
+          : page === 'patient-screening' && role.id === 'patient' ? <PatientScreening onNavigate={setPage}/>
           : page === 'facility-management' && ['admin', 'hospital'].includes(role.id) ? <FacilityManagement role={role.id}/>
           : page === 'admin-management' && role.id === 'admin' ? <AdminDashboard sections={['users', 'hospitalAdmins', 'permissions', 'activity']} initialSection="users"/>
           : page === 'healthcare-workers' && role.id === 'admin' ? <AdminDashboard sections={['doctors', 'staff']} initialSection="doctors"/>
@@ -545,7 +549,7 @@ function Dashboard({ role, account, initialPage, initialAction, onHome, onSignOu
                               : page === 'voice-review' ? <VoiceReviewQueue/>
                                 : page === 'clinical-workspace' ? <ClinicalWorkspace/>
                                   : page === 'maps' ? <MapsPage role={role.id} patients={records.patients} hospitals={records.hospitals} onReferralSaved={refresh}/>
-                                    : page === 'video-consultation' && role.id === 'patient' ? <TelemedicineWorkspace language={lang}/>
+                                    : page === 'video-consultation' && role.id === 'patient' ? <TelemedicineWorkspace language={lang} mode="video"/>
                                       : page === 'appointments' ? <TelemedicineWorkspace language={lang}/>
                                       : page === 'reports' && role.id === 'admin' ? <AnalyticsDashboard role="admin"/>
                                         : page === 'analytics' || (role.id === 'district' && page === 'overview') ? <AnalyticsDashboard role={role.id}/>
@@ -726,6 +730,7 @@ function PatientOverview({ account, records, loading, error, onNavigate, onRefre
     .filter(item => ['Upcoming', 'Confirmed'].includes(item.status) && new Date(item.scheduledAt).getTime() >= now)
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
   const nextAppointment = upcoming[0];
+  const nextVideoAppointment = upcoming.find(isVideoAppointment);
   const latest = [...records.screenings].sort((a, b) => new Date(b.screenedAt || b.createdAt) - new Date(a.screenedAt || a.createdAt))[0];
   const notifications = [...records.notifications].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
   const latestCategory = latest?.aiResult?.category || latest?.category;
@@ -751,7 +756,7 @@ function PatientOverview({ account, records, loading, error, onNavigate, onRefre
   ];
   const specialist = nextAppointment?.provider?.doctorProfile?.specialization || nextAppointment?.provider?.specialization || nextAppointment?.provider?.specialty || nextAppointment?.provider?.qualification || translate('telemedicine.generalDoctor');
   const appointmentDate = nextAppointment ? new Date(nextAppointment.scheduledAt) : null;
-  const canJoinNextAppointment = nextAppointment?.status === 'Confirmed';
+  const canJoinNextAppointment = nextAppointment && isVideoAppointment(nextAppointment) && nextAppointment.status === 'Confirmed';
   const appointmentStatus = nextAppointment
     ? translate(`statuses.${nextAppointment.status}`, { defaultValue: nextAppointment.status })
     : '';
@@ -802,7 +807,7 @@ function PatientOverview({ account, records, loading, error, onNavigate, onRefre
                   <span><CalendarDays size={16} aria-hidden="true"/><time dateTime={nextAppointment.scheduledAt}>{appointmentDate.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}</time></span>
                   <span><Clock3 size={16} aria-hidden="true"/><time dateTime={nextAppointment.scheduledAt}>{appointmentDate.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}</time></span>
                 </div>
-                <button className="patient-appointment-cta" type="button" onClick={() => onNavigate('video-consultation')}>
+                <button className="patient-appointment-cta" type="button" onClick={() => onNavigate(isVideoAppointment(nextAppointment) ? 'video-consultation' : 'appointments')}>
                   <Video size={18} aria-hidden="true"/>{canJoinNextAppointment ? translate('patientOverview.joinVideoCall') : translate('patientOverview.manageAppointment')}
                 </button>
               </div>
@@ -811,15 +816,15 @@ function PatientOverview({ account, records, loading, error, onNavigate, onRefre
       <article className="patient-dashboard-card patient-video-card">
         <header className="patient-card-heading">
           <div className="patient-card-title"><span className="patient-card-heading-icon"><Video size={19} aria-hidden="true"/></span><div><h2>{translate('patientOverview.videoConsultation')}</h2><p>{translate('patientOverview.videoConsultationHelp')}</p></div></div>
-          <span className={`patient-video-status ${loading || error ? 'is-pending' : ''}`}><i aria-hidden="true"/>{loading ? translate('dashboard.connecting') : error ? translate('dashboard.offline') : translate(canJoinNextAppointment ? 'patientOverview.confirmedVisit' : 'patientOverview.secureVisits')}</span>
+          <span className={`patient-video-status ${loading || error ? 'is-pending' : ''}`}><i aria-hidden="true"/>{loading ? translate('dashboard.connecting') : error ? translate('dashboard.offline') : translate(nextVideoAppointment?.status === 'Confirmed' ? 'patientOverview.confirmedVisit' : 'patientOverview.secureVisits')}</span>
         </header>
         <div className="patient-video-illustration" aria-hidden="true">
           <div className="patient-video-device"><span><Video size={32}/></span><i><Wifi size={24}/></i></div>
           <span className="patient-video-sparkle">✦</span>
           <span className="patient-video-cross">✚</span>
         </div>
-        <p className="patient-video-message">{canJoinNextAppointment ? translate('patientOverview.videoReadyMessage') : translate('patientOverview.videoEmptyMessage')}</p>
-        <button className="patient-video-cta" type="button" onClick={() => onNavigate('video-consultation')}>{translate(canJoinNextAppointment ? 'patientOverview.joinNow' : 'patientOverview.bookVideo')} <ArrowRight size={16} aria-hidden="true"/></button>
+        <p className="patient-video-message">{nextVideoAppointment?.status === 'Confirmed' ? translate('patientOverview.videoReadyMessage') : translate('patientOverview.videoEmptyMessage')}</p>
+        <button className="patient-video-cta" type="button" onClick={() => onNavigate('video-consultation')}>{translate(nextVideoAppointment?.status === 'Confirmed' ? 'patientOverview.joinNow' : 'patientOverview.bookVideo')} <ArrowRight size={16} aria-hidden="true"/></button>
       </article>
       <article className="patient-dashboard-card patient-health-tips">
         <header className="patient-card-heading">

@@ -35,6 +35,10 @@ test('patient dashboard keeps its primary navigation and all patient features ac
     const item = buttons.filter({ hasText: label });
     await item.click();
     await expect(item).toHaveClass(/nav-current/);
+    if (label === 'Book Appointment') {
+      await expect(page.locator('.clinic-appointments-workspace')).toBeVisible();
+      await expect(page.getByText('Find a doctor by department')).toBeVisible();
+    }
     if (label === 'Video Consultation') {
       await expect(page.locator('.telemedicine-workspace')).toBeVisible();
       await expect(page.getByText('Book a video appointment', { exact: false })).toBeVisible();

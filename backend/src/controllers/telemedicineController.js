@@ -10,6 +10,7 @@ module.exports = {
   appointments: asyncHandler(async (req, res) => apiResponse(res, { data: await telemedicine.listAppointments(req.user) })),
   adminOverview: asyncHandler(async (req, res) => apiResponse(res, { data: await telemedicine.adminOverview() })),
   book: asyncHandler(async (req, res) => apiResponse(res, { statusCode: 201, message: 'Video appointment booked', data: await telemedicine.book(req.body?.availabilityId, req.body, req.user) })),
+  bookClinic: asyncHandler(async (req, res) => apiResponse(res, { statusCode: 201, message: 'Clinic appointment request sent', data: await telemedicine.bookClinicAppointment(req.body || {}, req.user) })),
   consent: asyncHandler(async (req, res) => apiResponse(res, { message: 'Consultation consent recorded', data: await telemedicine.recordConsultationConsent(req.params.id, req.body || {}, req.user) })),
   action: asyncHandler(async (req, res) => {
     const messages = { confirm: 'Appointment accepted', decline: 'Appointment declined', cancel: 'Appointment cancelled', reschedule: 'Appointment rescheduled' };

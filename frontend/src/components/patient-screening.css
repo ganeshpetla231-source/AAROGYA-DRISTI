@@ -199,6 +199,50 @@
   font-weight: 700;
 }
 
+.patient-screening-doctor-suggestions {
+  display: grid;
+  gap: .75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e1eaf0;
+}
+
+.patient-screening-doctor-suggestions > p {
+  margin: 0;
+  color: #52677b;
+  line-height: 1.55;
+}
+
+.patient-screening-doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .75rem;
+}
+
+.patient-screening-doctor-grid article {
+  display: grid;
+  align-content: start;
+  gap: .35rem;
+  padding: .85rem;
+  border: 1px solid #d6e4ee;
+  border-radius: 10px;
+  background: #f8fbfd;
+}
+
+.patient-screening-doctor-grid article strong {
+  color: #173f5e;
+}
+
+.patient-screening-doctor-grid article span,
+.patient-screening-doctor-grid article small {
+  color: #52677b;
+}
+
+.patient-screening-doctor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
 @media (max-width: 620px) {
   .patient-screening-report {
     grid-template-columns: 1fr;
@@ -210,5 +254,9 @@
 
   .patient-screening-form .auth-submit {
     width: 100%;
+  }
+
+  .patient-screening-doctor-actions > button {
+    flex: 1 1 100%;
   }
 }

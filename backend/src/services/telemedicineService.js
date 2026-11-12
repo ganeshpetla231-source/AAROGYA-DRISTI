@@ -50,6 +50,19 @@ function validateBookingDetails(body = {}) {
   if (symptoms.length > 1500) throw new ApiError(400, 'Symptoms must be 1,500 characters or fewer');
   return { consultationReason, symptoms };
 }
+function validateClinicBookingDetails(body = {}) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new ApiError(400, 'Provide appointment details');
+  if (body.consentGranted !== true) throw new ApiError(400, 'Consent is required before requesting a clinic appointment');
+  const scheduledAt = validDate(body.scheduledAt);
+  if (!scheduledAt || scheduledAt <= new Date() || scheduledAt > new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)) {
+    throw new ApiError(400, 'Choose a future requested appointment time within the next 90 days');
+  }
+  const consultationReason = typeof body.consultationReason === 'string' ? body.consultationReason.trim() : '';
+  const symptoms = typeof body.symptoms === 'string' ? body.symptoms.trim() : '';
+  if (!consultationReason || consultationReason.length > 1000) throw new ApiError(400, 'Enter an appointment reason up to 1,000 characters');
+  if (symptoms.length > 1500) throw new ApiError(400, 'Symptoms must be 1,500 characters or fewer');
+  return { scheduledAt, consultationReason, symptoms };
+}
 
 async function config(user) {
   const servers = [{ urls: (process.env.STUN_URL || 'stun:stun.l.google.com:19302').split(',').map(value => value.trim()).filter(Boolean) }];
@@ -120,6 +133,37 @@ async function book(availabilityId, body, user) {
     return appointment.toObject();
   } catch (error) { await DoctorAvailability.updateOne({ _id: slot._id, status: 'Booked' }, { $set: { status: 'Open' }, $unset: { appointment: 1 } }); throw error; }
 }
+async function bookClinicAppointment(body, user) {
+  if (user.role !== 'patient') throw new ApiError(403, 'Only patients can request clinic appointments');
+  if (!mongoose.isValidObjectId(body?.doctorId)) throw new ApiError(400, 'Choose a verified doctor');
+  const { scheduledAt, consultationReason, symptoms } = validateClinicBookingDetails(body);
+  const doctor = await User.findOne({
+    _id: body.doctorId, role: 'doctor', isActive: true, approvalStatus: 'approved',
+    'doctorProfile.profileVerifiedAt': { $exists: true }
+  }).select('hospital').populate('hospital', 'isActive').lean();
+  if (!doctor || doctor.hospital?.isActive === false) throw new ApiError(404, 'Verified doctor not found');
+  const patient = await patientForUser(user);
+  const appointment = await Appointment.create({
+    patient: patient._id,
+    provider: doctor._id,
+    hospital: doctor.hospital?._id,
+    scheduledAt,
+    type: 'In-person clinic appointment',
+    visitMode: 'Clinic',
+    status: 'Upcoming',
+    consultationReason,
+    symptoms,
+    consultationConsentAt: new Date()
+  });
+  await AuditLog.create({ actor: user._id, action: 'clinic_appointment.requested', resourceType: 'Appointment', resourceId: appointment._id });
+  await notifications.notifyAppointment(appointment.toObject(), {
+    title: 'Clinic appointment request',
+    message: 'A patient requested an in-person appointment. Review and confirm the requested time.',
+    type: 'appointment',
+    metadata: { appointmentId: String(appointment._id), scheduledAt }
+  });
+  return appointment.toObject();
+}
 async function listAppointments(user) {
   let filter = {};
   if (user.role === 'doctor') {
@@ -151,6 +195,7 @@ async function updateAppointment(id, action, body, user) {
   } else if (action === 'reschedule') {
     if (!['doctor', 'patient'].includes(user.role)) throw new ApiError(403, 'Only appointment participants can reschedule');
     if (['Completed', 'Cancelled', 'Declined'].includes(appointment.status)) throw new ApiError(409, 'This appointment can no longer be rescheduled');
+    if (appointment.visitMode !== 'Video') throw new ApiError(409, 'Clinic appointment time changes must be arranged with the doctor');
     if (await Consultation.exists({ appointment: appointment._id, status: { $in: ['In progress', 'Completed'] } })) throw new ApiError(409, 'An active or completed consultation cannot be rescheduled');
     if (!mongoose.isValidObjectId(body.availabilityId)) throw new ApiError(400, 'Choose a new doctor availability slot');
     const slot = await DoctorAvailability.findOneAndUpdate({ _id: body.availabilityId, doctor: appointment.provider, status: 'Open', startsAt: { $gt: new Date() } }, { $set: { status: 'Booked' } }, { new: true });
@@ -163,7 +208,8 @@ async function updateAppointment(id, action, body, user) {
   } else throw new ApiError(404, 'Unknown appointment action');
   const auditAction = { confirm: 'confirmed', decline: 'declined', cancel: 'cancelled', reschedule: 'rescheduled' }[action];
   await AuditLog.create({ actor: user._id, action: `telemedicine.appointment_${auditAction}`, resourceType: 'Appointment', resourceId: appointment._id });
-  const eventText = action === 'confirm' ? ['Appointment confirmed', 'Your video appointment has been confirmed.'] : action === 'decline' ? ['Appointment request declined', 'The doctor could not accept this video appointment request. Please book another available time.'] : action === 'cancel' ? ['Appointment cancelled', 'A video appointment was cancelled.'] : ['Appointment rescheduled', 'A video appointment time was changed.'];
+  const visitName = appointment.visitMode === 'Video' ? 'video consultation' : 'clinic appointment';
+  const eventText = action === 'confirm' ? ['Appointment confirmed', `Your ${visitName} has been confirmed.`] : action === 'decline' ? ['Appointment request declined', `The doctor could not accept your ${visitName} request. Please choose another time or doctor.`] : action === 'cancel' ? ['Appointment cancelled', `A ${visitName} was cancelled.`] : ['Appointment rescheduled', 'A video appointment time was changed.'];
   await notifications.notifyAppointment(appointment, { title: eventText[0], message: eventText[1], type: action === 'confirm' ? 'appointment-confirmation' : 'appointment', metadata: { appointmentId: String(appointment._id), scheduledAt: appointment.scheduledAt } });
   return appointment.toObject();
 }
@@ -293,4 +339,4 @@ async function adminOverview() {
     consultationsByStatus: consultationByStatus
   };
 }
-module.exports = { config, availability, addAvailability, removeAvailability, book, listAppointments, updateAppointment, getRoom, recordConsultationConsent, saveNotes, scheduleFollowup, assertSocketParticipant, validateBookingDetails, adminOverview };
+module.exports = { config, availability, addAvailability, removeAvailability, book, bookClinicAppointment, listAppointments, updateAppointment, getRoom, recordConsultationConsent, saveNotes, scheduleFollowup, assertSocketParticipant, validateBookingDetails, validateClinicBookingDetails, adminOverview };

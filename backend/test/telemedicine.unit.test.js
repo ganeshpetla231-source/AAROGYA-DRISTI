@@ -64,6 +64,25 @@ test('video booking requires explicit consent and a valid consultation reason', 
   }), { consultationReason: 'Mouth pain', symptoms: 'Two days' });
 });
 
+test('clinic appointment requests require consent, a future time, and a reason', () => {
+  assert.throws(() => telemedicine.validateClinicBookingDetails({}), /Consent is required/);
+  assert.throws(() => telemedicine.validateClinicBookingDetails({
+    consentGranted: true,
+    scheduledAt: new Date(Date.now() - 60_000).toISOString(),
+    consultationReason: 'checkup'
+  }), /future requested appointment time/);
+  assert.throws(() => telemedicine.validateClinicBookingDetails({
+    consentGranted: true,
+    scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  }), /appointment reason/);
+  assert.deepEqual(telemedicine.validateClinicBookingDetails({
+    consentGranted: true,
+    scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    consultationReason: '  Dental checkup  ',
+    symptoms: '  Tooth pain  '
+  }).consultationReason, 'Dental checkup');
+});
+
 test('video booking and consultation schemas persist booking details and participant consent timestamps', () => {
   assert.ok(Appointment.schema.path('consultationReason'));
   assert.ok(Appointment.schema.path('symptoms'));

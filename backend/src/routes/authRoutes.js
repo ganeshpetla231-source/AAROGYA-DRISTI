@@ -1,13 +1,18 @@
 const express = require('express');
 const controller = require('../controllers/authController');
 const { authenticate } = require('../middleware/authMiddleware');
-const { authLimiter } = require('../middleware/rateLimits');
+const {
+  authLimiter,
+  loginLimiter,
+  patientOtpRequestLimiter,
+  patientOtpVerifyLimiter
+} = require('../middleware/rateLimits');
 
 const router = express.Router();
 router.post('/register', authLimiter, controller.register);
-router.post('/login', authLimiter, controller.login);
-router.post('/patient-otp/request', authLimiter, controller.requestPatientOtp);
-router.post('/patient-otp/verify', authLimiter, controller.verifyPatientOtp);
+router.post('/login', loginLimiter, controller.login);
+router.post('/patient-otp/request', patientOtpRequestLimiter, controller.requestPatientOtp);
+router.post('/patient-otp/verify', patientOtpVerifyLimiter, controller.verifyPatientOtp);
 router.post('/refresh', controller.refresh);
 router.post('/logout', controller.logout);
 router.get('/me', authenticate, controller.me);
