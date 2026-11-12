@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  assignPatientDoctor, createAdminAccount, createAdminDoctor, createAdminStaff, decideAdminDoctor, getAdminAccounts,
+  assignAdminDoctorHospital, assignPatientDoctor, createAdminAccount, createAdminDoctor, createAdminStaff, decideAdminDoctor, getAdminAccounts,
   getAdminActivity, getAdminDashboard, getAdminDoctors, getAdminHospitalManagers, getAdminHospitals,
   getAdminPatients, updateResource
 } from '../services/api.js';
@@ -28,6 +28,7 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
   const [dashboard, setDashboard] = useState(null);
   const [pendingDoctors, setPendingDoctors] = useState([]);
   const [approvedDoctors, setApprovedDoctors] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [patients, setPatients] = useState([]);
   const [pendingPage, setPendingPage] = useState(1);
   const [approvedPage, setApprovedPage] = useState(1);
@@ -53,15 +54,17 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
     setLoading(true);
     setError('');
     try {
-      const [summary, pending, approved, patientRecords] = await Promise.all([
+      const [summary, pending, approved, patientRecords, hospitalRecords] = await Promise.all([
         getAdminDashboard(),
         getPage(getAdminDoctors, pendingPage, { status: 'pending' }),
         getPage(getAdminDoctors, approvedPage, { status: 'approved', active: true }),
-        getPage(getAdminPatients, patientPage)
+        getPage(getAdminPatients, patientPage),
+        getAdminHospitals({ page: 1, limit: 100 })
       ]);
       setDashboard(summary);
       setPendingDoctors(pending.items);
       setApprovedDoctors(approved.items);
+      setHospitals((hospitalRecords.items || []).filter(hospital => hospital.isActive));
       setPatients(patientRecords.items);
       setPendingPagination(pending.pagination);
       setApprovedPagination(approved.pagination);
@@ -160,6 +163,24 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
     }
   }
 
+  async function assignHospital(doctor, hospitalId) {
+    if (!hospitalId) return;
+    const hospital = hospitals.find(item => item._id === hospitalId);
+    if (!hospital || !window.confirm(t('adminDashboard.confirmAssignDoctor', { name: doctor.name, hospital: hospital.name }))) return;
+    setBusyId(doctor._id);
+    setError('');
+    setNotice('');
+    try {
+      await assignAdminDoctorHospital(doctor._id, hospitalId);
+      setNotice(t('adminDashboard.doctorHospitalAssigned', { name: doctor.name, hospital: hospital.name }));
+      await load();
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusyId('');
+    }
+  }
+
   async function assign(patient, doctorId) {
     setBusyId(patient._id);
     setError('');
@@ -230,9 +251,17 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
     <section className="role-dashboard-panel">
       <header className="role-dashboard-heading"><div><h2>{t('adminDashboard.activeDoctorsTitle')}</h2><p>{t('adminDashboard.activeDoctorsHelp')}</p></div></header>
       {approvedDoctors.length ? <div className="role-dashboard-table-wrap"><table className="role-dashboard-table">
-        <thead><tr><th>{t('adminDashboard.name')}</th><th>{t('adminDashboard.staffId')}</th><th>{t('adminDashboard.email')}</th><th>{t('adminDashboard.district')}</th><th>{t('adminDashboard.accountStatus')}</th></tr></thead>
+        <thead><tr><th>{t('adminDashboard.name')}</th><th>{t('adminDashboard.staffId')}</th><th>{t('adminDashboard.email')}</th><th>{t('adminDashboard.district')}</th><th>{t('adminDashboard.doctorHospital')}</th><th>{t('adminDashboard.professionalVerification')}</th><th>{t('adminDashboard.accountStatus')}</th></tr></thead>
         <tbody>{approvedDoctors.map(doctor => <tr key={doctor._id}>
-          <td>{doctor.name}</td><td>{doctor.staffId || '—'}</td><td>{doctor.email}</td><td>{doctor.district || '—'}</td><td>{doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')}</td>
+          <td>{doctor.name}</td><td>{doctor.staffId || '—'}</td><td>{doctor.email}</td><td>{doctor.district || '—'}</td>
+          <td>{doctor.hospital?.name || <select aria-label={t('adminDashboard.assignHospitalTo', { name: doctor.name })}
+            value="" disabled={busyId === doctor._id || !hospitals.length}
+            onChange={event => assignHospital(doctor, event.target.value)}>
+            <option value="">{hospitals.length ? t('adminDashboard.assignHospital') : t('adminDashboard.noActiveHospitals')}</option>
+            {hospitals.map(hospital => <option key={hospital._id} value={hospital._id}>{hospital.name}</option>)}
+          </select>}</td>
+          <td>{doctor.profileVerified ? t('adminDashboard.verified') : doctor.hospital ? t('adminDashboard.verificationRequired') : t('adminDashboard.notAssigned')}</td>
+          <td>{doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')}</td>
         </tr>)}</tbody>
       </table></div> : <p className="role-dashboard-empty">{t('adminDashboard.noActiveDoctors')}</p>}
       <PaginationControls pagination={approvedPagination} onPageChange={setApprovedPage} label={t('adminDashboard.doctorOptionsPagination')} loading={loading}/>

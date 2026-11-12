@@ -19,6 +19,10 @@ module.exports = {
   createStaff: asyncHandler(async (req, res) => apiResponse(res, { statusCode: 201, message: 'Staff account created', data: await admin.createStaff(req.body, req.user) })),
   approveDoctor: asyncHandler(async (req, res) => apiResponse(res, { message: 'Doctor account approved', data: await admin.setDoctorDecision(req.params.doctorId, 'approve', req.user) })),
   rejectDoctor: asyncHandler(async (req, res) => apiResponse(res, { message: 'Doctor account rejected', data: await admin.setDoctorDecision(req.params.doctorId, 'reject', req.user) })),
+  assignDoctorHospital: asyncHandler(async (req, res) => apiResponse(res, {
+    message: 'Doctor assigned to hospital; professional verification is still required',
+    data: await admin.assignDoctorHospital(req.params.doctorId, req.body?.hospitalId, req.user)
+  })),
   patients: asyncHandler(async (req, res) => apiResponse(res, { data: await admin.patients(req.query) })),
   assignDoctor: asyncHandler(async (req, res) => apiResponse(res, { message: 'Patient doctor assignment updated', data: await admin.assignPatient(req.params.patientId, req.body?.doctorId ?? null, req.user) }))
 };

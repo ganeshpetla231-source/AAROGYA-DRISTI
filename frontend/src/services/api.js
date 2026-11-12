@@ -96,6 +96,7 @@ export async function getAdminDoctors(params = {}) { return payload(await api.ge
 export async function createAdminDoctor(data) { return payload(await api.post('/admin/doctors', data)); }
 export async function createAdminStaff(data) { return payload(await api.post('/admin/staff', data)); }
 export async function decideAdminDoctor(id, decision) { return payload(await api.put(`/admin/doctors/${encodeURIComponent(id)}/${decision}`)); }
+export async function assignAdminDoctorHospital(id, hospitalId) { return payload(await api.put(`/admin/doctors/${encodeURIComponent(id)}/hospital`, { hospitalId })); }
 export async function getAdminPatients(params = {}) { return payload(await api.get('/admin/patients', { params })); }
 export async function assignPatientDoctor(patientId, doctorId) { return payload(await api.put(`/admin/patients/${encodeURIComponent(patientId)}/assign-doctor`, { doctorId })); }
 export async function getPatientHistory(patientId) { return payload(await api.get(`/patients/${patientId}/medical-history`)); }

@@ -21,6 +21,7 @@ router.post('/doctors', controller.createDoctor);
 router.post('/staff', controller.createStaff);
 router.put('/doctors/:doctorId/approve', controller.approveDoctor);
 router.put('/doctors/:doctorId/reject', controller.rejectDoctor);
+router.put('/doctors/:doctorId/hospital', controller.assignDoctorHospital);
 router.get('/patients', controller.patients);
 router.put('/patients/:patientId/assign-doctor', controller.assignDoctor);
 

@@ -373,10 +373,19 @@ async function doctors(query = {}) {
     filter.isActive = query.active === 'true';
   }
   const [users, total] = await Promise.all([
-    User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).select('name email phone staffId district role approvalStatus isActive createdAt').lean(),
+    User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
+      .select('name email phone staffId district role approvalStatus isActive hospital doctorProfile.profileVerifiedAt createdAt')
+      .populate('hospital', 'name hospitalId')
+      .lean(),
     User.countDocuments(filter)
   ]);
-  return { items: users, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  return {
+    items: users.map(({ doctorProfile, ...user }) => ({
+      ...user,
+      profileVerified: Boolean(doctorProfile?.profileVerifiedAt)
+    })),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+  };
 }
 
 async function createDoctor(body, actor) {
@@ -480,6 +489,47 @@ async function setDoctorDecision(doctorId, decision, actor) {
   return { ...safeUser(doctor), approvalStatus: doctor.approvalStatus, isActive: doctor.isActive };
 }
 
+async function assignDoctorHospital(doctorId, hospitalId, actor) {
+  if (!mongoose.isValidObjectId(doctorId)) throw new ApiError(400, 'Invalid doctor ID');
+  if (typeof hospitalId !== 'string' || !mongoose.isValidObjectId(hospitalId)) {
+    throw new ApiError(400, 'Choose a valid hospital');
+  }
+  const hospital = await Hospital.findOne({ _id: hospitalId, isActive: true })
+    .select('_id name hospitalId')
+    .lean();
+  if (!hospital) throw new ApiError(400, 'Choose an active hospital');
+
+  const doctor = await User.findOneAndUpdate(
+    { _id: doctorId, role: 'doctor', approvalStatus: 'approved', isActive: true, hospital: null },
+    { $set: { hospital: hospital._id }, $unset: { 'doctorProfile.profileVerifiedAt': 1 } },
+    { new: true, runValidators: true }
+  ).select('_id').lean();
+  if (!doctor) {
+    const existing = await User.findOne({ _id: doctorId, role: 'doctor' })
+      .select('approvalStatus isActive hospital')
+      .lean();
+    if (!existing) throw new ApiError(404, 'Doctor account not found');
+    if (!existing.isActive || existing.approvalStatus !== 'approved') {
+      throw new ApiError(409, 'Only active, approved doctors can be assigned to a hospital');
+    }
+    if (existing.hospital) throw new ApiError(409, 'Doctor is already assigned to a hospital');
+    throw new ApiError(409, 'Doctor hospital assignment could not be completed; refresh and try again');
+  }
+
+  await AuditLog.create({
+    actor: actor._id,
+    action: 'admin.doctor_hospital_assigned',
+    resourceType: 'User',
+    resourceId: doctor._id,
+    metadata: { hospitalId: hospital._id }
+  });
+  return {
+    doctorId: doctor._id,
+    hospital: { id: hospital._id, name: hospital.name, hospitalId: hospital.hospitalId },
+    profileVerified: false
+  };
+}
+
 async function patients(query = {}) {
   const { page, limit, skip } = pageOptions(query);
   const filter = {};
@@ -521,5 +571,5 @@ async function assignPatient(patientId, doctorId, actor) {
 module.exports = {
   dashboard, activity, hospitals, hospitalManagers, adminAccounts, createAdminAccount, referrals,
   adminNotificationRecipients, adminNotifications, createAdminNotification,
-  createHospital, doctors, createDoctor, createStaff, setDoctorDecision, patients, assignPatient
+  createHospital, doctors, createDoctor, createStaff, setDoctorDecision, assignDoctorHospital, patients, assignPatient
 };
