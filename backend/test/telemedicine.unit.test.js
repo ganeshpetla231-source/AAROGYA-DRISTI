@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const telemedicine = require('../src/services/telemedicineService');
 const models = require('../src/models');
-const { Appointment, Consultation } = models;
+const { Appointment, Consultation, Prescription } = models;
 
 function withEnv(values, callback) {
   const previous = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
@@ -51,6 +51,7 @@ test('appointments and consultation records support declined states and Hindi ch
   assert.ok(Appointment.schema.path('status').enumValues.includes('Declined'));
   assert.ok(Consultation.schema.path('status').enumValues.includes('Declined'));
   assert.ok(Consultation.schema.path('chatMessages').schema.path('language').enumValues.includes('hi'));
+  assert.equal(Prescription.schema.path('appointment').options.ref, 'Appointment');
 });
 
 test('video booking requires explicit consent and a valid consultation reason', () => {
@@ -149,6 +150,120 @@ test('availability validation distinguishes past starts, invalid ends, and exces
     telemedicine.addAvailability(availability(now + 60 * 60_000, now + 13 * 60 * 60_000 + 1), doctor),
     /cannot exceed 12 hours/
   );
+});
+
+test('patient availability includes future open and booked slots without appointment references', async t => {
+  const originalUserFind = models.User.find;
+  const originalAvailabilityFind = models.DoctorAvailability.find;
+  t.after(() => {
+    models.User.find = originalUserFind;
+    models.DoctorAvailability.find = originalAvailabilityFind;
+  });
+  const doctorId = new mongoose.Types.ObjectId();
+  const items = [
+    { status: 'Open', startsAt: new Date(Date.now() + 60_000) },
+    { status: 'Booked', startsAt: new Date(Date.now() + 120_000) }
+  ];
+  let availabilityFilter;
+  let selection;
+  models.User.find = () => ({ distinct: async () => [doctorId] });
+  models.DoctorAvailability.find = filter => {
+    availabilityFilter = filter;
+    return {
+      select(value) { selection = value; return this; },
+      sort() { return this; },
+      populate() { return this; },
+      async lean() { return items; }
+    };
+  };
+
+  const result = await telemedicine.availability();
+  assert.deepEqual(availabilityFilter.status, { $in: ['Open', 'Booked'] });
+  assert.deepEqual(availabilityFilter.doctor.$in, [doctorId]);
+  assert.equal(selection, '-appointment');
+  assert.deepEqual(result, { items, total: 2 });
+});
+
+test('consultation prescriptions are doctor-created after completion and visible to the appointment patient', async t => {
+  const notifications = require('../src/services/notificationService');
+  const originals = {
+    findAppointment: models.Appointment.findById,
+    findPatient: models.Patient.findOne,
+    findPatientById: models.Patient.findById,
+    findDoctor: models.User.exists,
+    findDoctorById: models.User.findById,
+    findConsultation: models.Consultation.findOne,
+    findPrescriptions: models.Prescription.find,
+    createPrescription: models.Prescription.create,
+    createAudit: models.AuditLog.create,
+    notifyPatient: notifications.notifyPatient
+  };
+  t.after(() => {
+    models.Appointment.findById = originals.findAppointment;
+    models.Patient.findOne = originals.findPatient;
+    models.Patient.findById = originals.findPatientById;
+    models.User.exists = originals.findDoctor;
+    models.User.findById = originals.findDoctorById;
+    models.Consultation.findOne = originals.findConsultation;
+    models.Prescription.find = originals.findPrescriptions;
+    models.Prescription.create = originals.createPrescription;
+    models.AuditLog.create = originals.createAudit;
+    notifications.notifyPatient = originals.notifyPatient;
+  });
+  const appointmentId = new mongoose.Types.ObjectId();
+  const patientId = new mongoose.Types.ObjectId();
+  const patientUserId = new mongoose.Types.ObjectId();
+  const doctorId = new mongoose.Types.ObjectId();
+  const appointment = { _id: appointmentId, patient: patientId, provider: doctorId, visitMode: 'Video', scheduledAt: new Date() };
+  const consultation = { status: 'Scheduled', endedAt: null };
+  const savedPrescription = {
+    _id: new mongoose.Types.ObjectId(),
+    appointment: appointmentId,
+    patient: patientId,
+    prescribedBy: doctorId,
+    medication: 'Example medication',
+    instructions: 'Use only as directed',
+    toObject() { return this; }
+  };
+  let prescriptionFilter;
+  models.Appointment.findById = async () => appointment;
+  models.Patient.findOne = () => ({ select() { return { lean: async () => ({ _id: patientId }) }; } });
+  models.Patient.findById = () => ({ select() { return { lean: async () => ({ name: 'Test Patient', patientId: 'P-123' }) }; } });
+  models.User.exists = async () => true;
+  models.User.findById = () => ({
+    select() { return this; },
+    populate() { return this; },
+    async lean() { return { name: 'Test Doctor', doctorProfile: { department: 'Dental' }, hospital: { name: 'Test Hospital' } }; }
+  });
+  models.Consultation.findOne = () => ({ select: async () => consultation });
+  models.Prescription.create = async value => Object.assign(savedPrescription, value);
+  models.Prescription.find = filter => {
+    prescriptionFilter = filter;
+    return {
+      sort() { return this; },
+      populate() { return this; },
+      async lean() { return [savedPrescription]; }
+    };
+  };
+  models.AuditLog.create = async () => ({});
+  notifications.notifyPatient = async () => [];
+
+  await assert.rejects(
+    telemedicine.createConsultationPrescription(appointmentId, { medication: 'Example medication', instructions: 'Use only as directed' }, { _id: doctorId, role: 'doctor' }),
+    /must be completed/
+  );
+  consultation.status = 'Completed';
+  consultation.endedAt = new Date();
+  const created = await telemedicine.createConsultationPrescription(appointmentId, { medication: 'Example medication', instructions: 'Use only as directed' }, { _id: doctorId, role: 'doctor' });
+  assert.equal(String(created.appointment), String(appointmentId));
+  assert.equal(String(created.patient), String(patientId));
+
+  const result = await telemedicine.getConsultationPrescriptions(appointmentId, { _id: patientUserId, role: 'patient' });
+  assert.deepEqual(prescriptionFilter, { appointment: appointmentId, patient: patientId });
+  assert.equal(result.patient.name, 'Test Patient');
+  assert.equal(result.doctor.name, 'Test Doctor');
+  assert.equal(result.doctor.hospital, 'Test Hospital');
+  assert.equal(result.prescriptions.length, 1);
 });
 
 test('consultation room responses keep doctor notes private from the patient', async t => {

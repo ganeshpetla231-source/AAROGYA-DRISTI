@@ -137,6 +137,8 @@ export async function recordTelemedicineConsent(id) { return payload(await api.p
 export async function updateTelemedicineAppointment(id, action, data = {}) { return payload(await api.patch(`/telemedicine/appointments/${id}/${action}`, data)); }
 export async function getTelemedicineRoom(id) { return payload(await api.get(`/telemedicine/appointments/${id}/room`)); }
 export async function saveConsultationNotes(id, notes) { return payload(await api.patch(`/telemedicine/appointments/${id}/notes`, { notes })); }
+export async function getTelemedicinePrescriptions(id) { return payload(await api.get(`/telemedicine/appointments/${id}/prescriptions`)); }
+export async function createTelemedicinePrescription(id, data) { return payload(await api.post(`/telemedicine/appointments/${id}/prescriptions`, data)); }
 export async function createClinicalReferral(patientKey, data) { return payload(await api.post(`/clinical/patients/${encodeURIComponent(patientKey)}/referrals`, data)); }
 export async function uploadClinicalLabReport(patientKey, formData) { return payload(await api.post(`/clinical/patients/${encodeURIComponent(patientKey)}/lab-reports`, formData, { timeout: 30000, headers: { 'Content-Type': 'multipart/form-data' } })); }
 export async function downloadClinicalDocument(id) { return (await api.get(`/clinical/documents/${id}`, { responseType: 'blob' })).data; }

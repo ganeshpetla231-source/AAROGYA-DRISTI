@@ -19,5 +19,7 @@ module.exports = {
   }),
   room: asyncHandler(async (req, res) => apiResponse(res, { data: await telemedicine.getRoom(req.params.id, req.user) })),
   notes: asyncHandler(async (req, res) => apiResponse(res, { message: 'Consultation notes saved', data: await telemedicine.saveNotes(req.params.id, req.body || {}, req.user) })),
+  prescriptions: asyncHandler(async (req, res) => apiResponse(res, { data: await telemedicine.getConsultationPrescriptions(req.params.id, req.user) })),
+  createPrescription: asyncHandler(async (req, res) => apiResponse(res, { statusCode: 201, message: 'Prescription saved', data: await telemedicine.createConsultationPrescription(req.params.id, req.body || {}, req.user) })),
   followup: asyncHandler(async (req, res) => apiResponse(res, { statusCode: 201, message: 'Follow-up scheduled', data: await telemedicine.scheduleFollowup(req.params.id, req.body || {}, req.user) }))
 };

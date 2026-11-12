@@ -4,9 +4,38 @@ import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext.jsx';
 import './telemedicine-call.css';
 import {
-  getAccessToken, getClinicalPatient, getRealtimeOrigin, getScreeningImage, getTelemedicineConfig,
-  getTelemedicineRoom, saveConsultationNotes
+  createTelemedicinePrescription, getAccessToken, getClinicalPatient, getRealtimeOrigin, getScreeningImage,
+  getTelemedicineConfig, getTelemedicinePrescriptions, getTelemedicineRoom, saveConsultationNotes
 } from '../services/api.js';
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+function printPrescriptionDocument(bundle, labels, locale) {
+  const popup = window.open('', '_blank');
+  if (!popup) throw new Error(labels.popupBlocked);
+  popup.opener = null;
+  const dateLabelFor = value => value ? new Date(value).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : labels.notRecorded;
+  const lines = [
+    [labels.patient, bundle.patient.name],
+    [labels.patientId, bundle.patient.patientId],
+    [labels.doctor, bundle.doctor.name],
+    [labels.department, bundle.doctor.department],
+    [labels.specialization, bundle.doctor.specialization],
+    [labels.registrationNumber, bundle.doctor.registrationNumber],
+    [labels.hospital, bundle.doctor.hospital],
+    [labels.consultationDate, dateLabelFor(bundle.appointment.scheduledAt)],
+    [labels.completedDate, dateLabelFor(bundle.appointment.completedAt)]
+  ].filter(([, value]) => value).map(([label, value]) => `<p><b>${escapeHtml(label)}:</b> ${escapeHtml(value)}</p>`).join('');
+  const rows = bundle.prescriptions.map(item => `<article><h2>${escapeHtml(item.medication)}</h2><p>${escapeHtml(item.instructions)}</p><p><b>${escapeHtml(labels.startDate)}:</b> ${escapeHtml(dateLabelFor(item.startDate))}</p><p><b>${escapeHtml(labels.endDate)}:</b> ${escapeHtml(dateLabelFor(item.endDate))}</p><small>${escapeHtml(labels.issued)}: ${escapeHtml(dateLabelFor(item.createdAt))}</small></article>`).join('');
+  popup.document.write(`<!doctype html><html lang="${escapeHtml(locale)}"><head><meta charset="utf-8"><title>${escapeHtml(labels.title)} - ${escapeHtml(bundle.patient.patientId)}</title><style>body{font:15px Arial,sans-serif;color:#243b53;margin:0;padding:36px}.sheet{max-width:760px;margin:auto}.brand{color:#14532d;font-size:24px;font-weight:700}.rule{height:3px;background:#14532d;margin:16px 0 24px}.details{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin:20px 0}.details p{margin:5px 0}article{padding:16px 0;border-top:1px solid #bccdc4}article h2{font-size:18px;margin:0 0 8px}article p{white-space:pre-wrap;line-height:1.55}.signature{margin-top:42px;text-align:right}.signature b{display:block}@media print{body{padding:0}.sheet{max-width:none}@page{margin:18mm}}</style></head><body><main class="sheet"><div class="brand">Aarogya Drishti</div><h1>${escapeHtml(labels.title)}</h1><div class="rule"></div><section class="details">${lines}</section>${rows}<div class="signature"><b>${escapeHtml(bundle.doctor.name)}</b><span>${escapeHtml(bundle.doctor.specialization || bundle.doctor.department)}</span><br><span>${escapeHtml(labels.doctorSignature)}</span></div></main></body></html>`);
+  popup.document.close();
+  popup.focus();
+  window.setTimeout(() => popup.print(), 250);
+}
 
 const dateLabel = (value, language) => new Date(value).toLocaleString(language === 'te' ? 'te-IN' : language === 'hi' ? 'hi-IN' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' });
 const displayDuration = seconds => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -26,6 +55,12 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
   const [status, setStatus] = useState('Scheduled');
   const [note, setNote] = useState('');
   const [saved, setSaved] = useState(false);
+  const [prescriptionBundle, setPrescriptionBundle] = useState(null);
+  const [prescriptionBusy, setPrescriptionBusy] = useState(false);
+  const [prescriptionLoading, setPrescriptionLoading] = useState(false);
+  const [prescriptionError, setPrescriptionError] = useState('');
+  const [prescriptionSaved, setPrescriptionSaved] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [network, setNetwork] = useState('checkingNetwork');
   const [clinical, setClinical] = useState(null);
@@ -39,6 +74,16 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
   const closedRef = useRef(false);
   const liveAtRef = useRef(null);
   const facingModeRef = useRef('user');
+  const refreshPrescriptions = useCallback(async () => {
+    setPrescriptionLoading(true);
+    try {
+      const data = await getTelemedicinePrescriptions(appointment._id);
+      setPrescriptionBundle(data);
+      return data;
+    } finally {
+      setPrescriptionLoading(false);
+    }
+  }, [appointment._id]);
 
   const stopMedia = useCallback(() => {
     closedRef.current = true;
@@ -64,8 +109,13 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
         setNote(roomData.consultation.notes || '');
         setChat(roomData.consultation.chatMessages || []);
         setStatus(roomData.consultation.status);
+        setCallEnded(roomData.consultation.status === 'Completed');
         if (['Completed', 'Cancelled', 'Declined'].includes(roomData.consultation.status)) {
           setPhase('ended');
+          if (roomData.consultation.status === 'Completed') {
+            try { await refreshPrescriptions(); }
+            catch (failure) { if (mounted) setPrescriptionError(failure.message); }
+          }
           return;
         }
 
@@ -189,7 +239,9 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
         socket.on('consultation:status', value => setStatus(value.status));
         socket.on('call:ended', () => {
           setStatus('Completed');
+          setCallEnded(true);
           setPhase('ended');
+          refreshPrescriptions().catch(failure => setPrescriptionError(failure.message));
           stopMedia();
         });
         socket.on('peer:left', () => {
@@ -219,7 +271,7 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
       mounted = false;
       stopMedia();
     };
-  }, [appointment._id, appointment.patient?._id, auth.user.role, doctor, stopMedia]);
+  }, [appointment._id, appointment.patient?._id, auth.user.role, doctor, refreshPrescriptions, stopMedia]);
 
   useEffect(() => {
     if (phase !== 'live') return undefined;
@@ -337,6 +389,58 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
     }
   }
 
+  async function savePrescription(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = new FormData(form);
+    setPrescriptionBusy(true);
+    setPrescriptionError('');
+    setPrescriptionSaved(false);
+    try {
+      await createTelemedicinePrescription(appointment._id, {
+        medication: values.get('medication'),
+        instructions: values.get('instructions'),
+        startDate: values.get('startDate') || undefined,
+        endDate: values.get('endDate') || undefined
+      });
+      form.reset();
+      await refreshPrescriptions();
+      setPrescriptionSaved(true);
+    } catch (failure) {
+      setPrescriptionError(failure.message);
+    } finally {
+      setPrescriptionBusy(false);
+    }
+  }
+
+  function downloadPrescription() {
+    if (!prescriptionBundle?.prescriptions?.length) return;
+    const locale = i18n.resolvedLanguage === 'te' ? 'te-IN' : i18n.resolvedLanguage === 'hi' ? 'hi-IN' : 'en-US';
+    try {
+      printPrescriptionDocument(prescriptionBundle, {
+        title: callText('prescriptionTitle'),
+        patient: callText('prescriptionPatient'),
+        patientId: callText('prescriptionPatientId'),
+        doctor: callText('prescriptionDoctor'),
+        department: callText('prescriptionDepartment'),
+        specialization: callText('prescriptionSpecialization'),
+        registrationNumber: callText('prescriptionRegistration'),
+        hospital: callText('prescriptionHospital'),
+        consultationDate: callText('prescriptionConsultationDate'),
+        completedDate: callText('prescriptionCompletedDate'),
+        startDate: t('clinical.startDate'),
+        endDate: t('clinical.endDate'),
+        issued: callText('prescriptionIssued'),
+        doctorSignature: callText('prescriptionDoctorSignature'),
+        notRecorded: callText('prescriptionNotRecorded'),
+        popupBlocked: callText('prescriptionPopupBlocked')
+      }, locale);
+      setPrescriptionError('');
+    } catch (failure) {
+      setPrescriptionError(failure.message);
+    }
+  }
+
   const peerName = doctor ? appointment.patient?.name : appointment.provider?.name;
   const screenings = clinical?.screenings || EMPTY_LIST;
   const history = clinical?.medicalHistory || EMPTY_LIST;
@@ -374,7 +478,7 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
         <button className="video-close" aria-label={callText('close')} onClick={closeCall}>×</button>
       </header>
       {error && <div className="form-error video-error" role="alert">{error}</div>}
-      <div className="video-room-grid">
+      <div className={`video-room-grid ${callEnded && status === 'Completed' ? 'video-room-grid-ended' : ''}`}>
         <div className="video-stage">
           <video ref={remoteVideoRef} autoPlay playsInline aria-label={callText('otherVideo')} />
           <div className={`remote-placeholder ${phase === 'live' ? 'remote-connected' : ''}`} role="status">
@@ -420,15 +524,45 @@ export function TelemedicineCall({ appointment, doctor, onClose }) {
             {!chat.length && <span className="chat-empty">{callText('savedMessages')}</span>}
           </div>
           <form onSubmit={sendMessage}>
-            <select value={chatLanguage} onChange={event => setChatLanguage(event.target.value)} aria-label={callText('messageLanguage')}><option value="en">{t('language.english')}</option><option value="te">{t('language.telugu')}</option><option value="hi">{t('language.hindi')}</option></select>
-            <input value={draft} maxLength={1000} onChange={event => setDraft(event.target.value)} placeholder={callText('messagePlaceholder')} aria-label={callText('messageLabel')} />
-            <button type="submit">{callText('send')}</button>
+            <select disabled={phase === 'ended'} value={chatLanguage} onChange={event => setChatLanguage(event.target.value)} aria-label={callText('messageLanguage')}><option value="en">{t('language.english')}</option><option value="te">{t('language.telugu')}</option><option value="hi">{t('language.hindi')}</option></select>
+            <input disabled={phase === 'ended'} value={draft} maxLength={1000} onChange={event => setDraft(event.target.value)} placeholder={callText('messagePlaceholder')} aria-label={callText('messageLabel')} />
+            <button type="submit" disabled={phase === 'ended'}>{callText('send')}</button>
           </form>
           {doctor && <div className="video-doctor-notes">
             <label>{callText('doctorNotes')}<textarea value={note} maxLength={5000} onChange={event => { setNote(event.target.value); setSaved(false); }} /></label>
             <button className="clinical-secondary" onClick={persistNotes}>{callText('saveNotes')}</button>
             {saved && <small>{callText('notesSaved')}</small>}
           </div>}
+          {callEnded && status === 'Completed' && <section className="video-prescription">
+            <div className="video-prescription-heading"><b>{callText('prescriptionTitle')}</b><small>{callText('prescriptionAfterCall')}</small></div>
+            {prescriptionLoading && <small>{callText('prescriptionLoading')}</small>}
+            {prescriptionError && <div className="form-error" role="alert">{prescriptionError}<button type="button" className="clinical-secondary" onClick={() => refreshPrescriptions().catch(failure => setPrescriptionError(failure.message))}>{t('telemedicine.retry')}</button></div>}
+            {prescriptionBundle && <div className="video-prescription-participants">
+              <p><b>{callText('prescriptionPatient')}:</b> {prescriptionBundle.patient.name} · {prescriptionBundle.patient.patientId}</p>
+              <p><b>{callText('prescriptionDoctor')}:</b> {prescriptionBundle.doctor.name}</p>
+              {(prescriptionBundle.doctor.specialization || prescriptionBundle.doctor.department) && <p>{prescriptionBundle.doctor.specialization || prescriptionBundle.doctor.department}</p>}
+              {prescriptionBundle.doctor.registrationNumber && <p><b>{callText('prescriptionRegistration')}:</b> {prescriptionBundle.doctor.registrationNumber}</p>}
+              {prescriptionBundle.doctor.hospital && <p><b>{callText('prescriptionHospital')}:</b> {prescriptionBundle.doctor.hospital}</p>}
+              <p><b>{callText('prescriptionConsultationDate')}:</b> {dateLabel(prescriptionBundle.appointment.scheduledAt, i18n.resolvedLanguage)}</p>
+            </div>}
+            {prescriptionBundle?.prescriptions?.map(item => <article className="video-prescription-item" key={item._id}>
+              <b>{item.medication}</b><p>{item.instructions}</p>
+              <small>{t('clinical.startDate')}: {item.startDate ? dateLabel(item.startDate, i18n.resolvedLanguage) : callText('prescriptionNotRecorded')}</small>
+              <small>{t('clinical.endDate')}: {item.endDate ? dateLabel(item.endDate, i18n.resolvedLanguage) : callText('prescriptionNotRecorded')}</small>
+            </article>)}
+            {prescriptionBundle && !prescriptionBundle.prescriptions.length && !doctor && <small>{callText('noPrescription')}</small>}
+            {doctor && prescriptionBundle && <form className="video-prescription-form" onSubmit={savePrescription}>
+              <label>{t('clinical.medication')}<input name="medication" required maxLength="160"/></label>
+              <label>{t('clinical.instructions')}<textarea name="instructions" required maxLength="1000" rows="3"/></label>
+              <div><label>{t('clinical.startDate')}<input name="startDate" type="date"/></label><label>{t('clinical.endDate')}<input name="endDate" type="date"/></label></div>
+              <button className="clinical-secondary" disabled={prescriptionBusy}>{prescriptionBusy ? callText('prescriptionSaving') : callText('savePrescription')}</button>
+              {prescriptionSaved && <small>{callText('prescriptionSaved')}</small>}
+            </form>}
+            {!!prescriptionBundle?.prescriptions?.length && <div className="video-prescription-download">
+              <button className="clinical-secondary" type="button" onClick={downloadPrescription}>{callText('downloadPrescription')}</button>
+              <small>{callText('prescriptionPrintHelp')}</small>
+            </div>}
+          </section>}
         </aside>
       </div>
     </section>

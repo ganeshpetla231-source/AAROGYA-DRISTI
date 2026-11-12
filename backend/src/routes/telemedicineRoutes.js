@@ -18,5 +18,7 @@ router.patch('/appointments/:id/decline', authorize('doctor'), (req, res, next) 
 router.patch('/appointments/:id/cancel', authorize('patient', 'doctor'), (req, res, next) => { req.params.action = 'cancel'; next(); }, controller.action);
 router.patch('/appointments/:id/reschedule', authorize('patient', 'doctor'), (req, res, next) => { req.params.action = 'reschedule'; next(); }, controller.action);
 router.patch('/appointments/:id/notes', authorize('doctor'), controller.notes);
+router.get('/appointments/:id/prescriptions', authorize('patient', 'doctor'), controller.prescriptions);
+router.post('/appointments/:id/prescriptions', authorize('doctor'), controller.createPrescription);
 router.post('/appointments/:id/follow-ups', authorize('doctor'), controller.followup);
 module.exports = router;

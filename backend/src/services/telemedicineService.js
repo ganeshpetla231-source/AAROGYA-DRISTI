@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const ApiError = require('../utils/ApiError');
-const { User, Patient, DoctorAvailability, Appointment, Consultation, AuditLog, Referral } = require('../models');
+const { User, Patient, DoctorAvailability, Appointment, Consultation, Prescription, AuditLog, Referral } = require('../models');
 const { schedule } = require('./clinicalService');
 const notifications = require('./notificationService');
 
@@ -77,12 +77,12 @@ async function config(user) {
   return { iceServers: servers, turnConfigured: servers.length > 1 };
 }
 async function availability(query = {}) {
-  const filter = { status: 'Open', startsAt: { $gt: new Date() }, doctor: { $in: await verifiedDoctorIds() } };
+  const filter = { status: { $in: ['Open', 'Booked'] }, startsAt: { $gt: new Date() }, doctor: { $in: await verifiedDoctorIds() } };
   if (query.doctor !== undefined) {
     if (!mongoose.isValidObjectId(query.doctor)) throw new ApiError(400, 'Choose a valid doctor');
     filter.doctor = query.doctor;
   }
-  const items = await DoctorAvailability.find(filter).sort({ startsAt: 1 }).limit(100)
+  const items = await DoctorAvailability.find(filter).select('-appointment').sort({ startsAt: 1 })
     .populate('doctor', 'name role doctorProfile.department doctorProfile.specialization doctorProfile.qualifications doctorProfile.yearsExperience doctorProfile.biography doctorProfile.profileVerifiedAt hospital')
     .lean();
   return { items, total: items.length };
@@ -262,6 +262,70 @@ async function saveNotes(id, body, user) {
   await AuditLog.create({ actor: user._id, action: 'telemedicine.notes_saved', resourceType: 'Consultation', resourceId: consultation._id });
   return { id: consultation._id, notes: consultation.notes };
 }
+async function consultationPrescriptionContext(id, user) {
+  const appointment = await authorizedAppointment(id, user);
+  if (appointment.visitMode !== 'Video') throw new ApiError(409, 'Prescriptions are available only for video consultations');
+  const consultation = await Consultation.findOne({ appointment: appointment._id }).select('status endedAt');
+  if (!consultation || consultation.status !== 'Completed') throw new ApiError(409, 'The consultation must be completed before prescriptions are available');
+  return { appointment, consultation };
+}
+async function getConsultationPrescriptions(id, user) {
+  const { appointment, consultation } = await consultationPrescriptionContext(id, user);
+  const [patient, doctor, prescriptions] = await Promise.all([
+    Patient.findById(appointment.patient).select('name patientId').lean(),
+    User.findById(appointment.provider)
+      .select('name doctorProfile.department doctorProfile.specialization doctorProfile.registrationNumber hospital')
+      .populate('hospital', 'name')
+      .lean(),
+    Prescription.find({ appointment: appointment._id, patient: appointment.patient })
+      .sort({ createdAt: 1 })
+      .populate('prescribedBy', 'name')
+      .lean()
+  ]);
+  if (!patient || !doctor) throw new ApiError(404, 'Consultation participant records could not be found');
+  return {
+    appointment: { id: appointment._id, scheduledAt: appointment.scheduledAt, completedAt: consultation.endedAt || null },
+    patient: { name: patient.name, patientId: patient.patientId },
+    doctor: {
+      name: doctor.name,
+      department: doctor.doctorProfile?.department || '',
+      specialization: doctor.doctorProfile?.specialization || '',
+      registrationNumber: doctor.doctorProfile?.registrationNumber || '',
+      hospital: doctor.hospital?.name || ''
+    },
+    prescriptions
+  };
+}
+async function createConsultationPrescription(id, body, user) {
+  if (user.role !== 'doctor') throw new ApiError(403, 'Only the assigned doctor can prescribe after a video consultation');
+  const { appointment } = await consultationPrescriptionContext(id, user);
+  const medication = String(body?.medication || '').trim();
+  const instructions = String(body?.instructions || '').trim();
+  if (!medication || medication.length > 160) throw new ApiError(400, 'Enter a medication name up to 160 characters');
+  if (!instructions || instructions.length > 1000) throw new ApiError(400, 'Enter prescription instructions up to 1,000 characters');
+  const startDate = body.startDate ? new Date(body.startDate) : undefined;
+  const endDate = body.endDate ? new Date(body.endDate) : undefined;
+  if ((startDate && Number.isNaN(startDate.getTime())) || (endDate && Number.isNaN(endDate.getTime())) || (startDate && endDate && endDate < startDate)) {
+    throw new ApiError(400, 'Enter valid prescription dates');
+  }
+  const item = await Prescription.create({
+    appointment: appointment._id,
+    patient: appointment.patient,
+    prescribedBy: user._id,
+    medication,
+    instructions,
+    startDate,
+    endDate
+  });
+  await AuditLog.create({ actor: user._id, action: 'telemedicine.prescription_created', resourceType: 'Prescription', resourceId: item._id });
+  await notifications.notifyPatient(appointment.patient, {
+    title: 'Video consultation prescription available',
+    message: 'Your doctor added a prescription to your completed video consultation.',
+    type: 'prescription',
+    metadata: { appointmentId: String(appointment._id) }
+  }, [user._id]);
+  return item.toObject();
+}
 async function scheduleFollowup(id, body, user) {
   const appointment = await authorizedAppointment(id, user);
   if (user.role !== 'doctor') throw new ApiError(403, 'Only the assigned doctor can schedule a follow-up');
@@ -348,4 +412,4 @@ async function adminOverview() {
     consultationsByStatus: consultationByStatus
   };
 }
-module.exports = { config, availability, addAvailability, removeAvailability, book, bookClinicAppointment, listAppointments, updateAppointment, getRoom, recordConsultationConsent, saveNotes, scheduleFollowup, assertSocketParticipant, validateBookingDetails, validateClinicBookingDetails, adminOverview };
+module.exports = { config, availability, addAvailability, removeAvailability, book, bookClinicAppointment, listAppointments, updateAppointment, getRoom, recordConsultationConsent, saveNotes, getConsultationPrescriptions, createConsultationPrescription, scheduleFollowup, assertSocketParticipant, validateBookingDetails, validateClinicBookingDetails, adminOverview };
