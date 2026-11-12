@@ -2,7 +2,7 @@ import axios from 'axios';
 import { cachePublishedEducation, readCachedEducation } from './offlineStorage.js';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: "https://aarogya-dristi.onrender.com/api" ,
   timeout: 10000,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' }
