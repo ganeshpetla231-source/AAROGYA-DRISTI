@@ -143,7 +143,7 @@ export function AdminDoctorVerification({ onChanged }) {
     }
   }
 
-  return <section className="role-dashboard-panel">
+  return <section className="role-dashboard-panel admin-doctor-verification">
     <header className="role-dashboard-heading">
       <div>
         <h2>{t('adminDashboard.credentialReviewTitle')}</h2>
@@ -153,7 +153,7 @@ export function AdminDoctorVerification({ onChanged }) {
     {error && <p className="role-dashboard-error" role="alert">{error}</p>}
     {notice && <p className="role-dashboard-success" role="status">{notice}</p>}
     {loading ? <p>{t('adminDashboard.loading')}</p> : doctors.length ? <>
-      <label>{t('adminDashboard.doctorToReview')}
+      <label className="admin-doctor-picker">{t('adminDashboard.doctorToReview')}
         <select value={selectedId} onChange={event => setSelectedId(event.target.value)}>
           {doctors.map(item => <option key={item._id} value={item._id}>
             {item.name} · {item.staffId || item.email}
@@ -231,34 +231,51 @@ export function AdminDoctorVerification({ onChanged }) {
           </label>
           <button className="role-dashboard-primary" type="submit" disabled={busy || !doctor.hospital}>{t('facility.uploadDocument')}</button>
         </form>
-        <div className="facility-item">
-          <strong>{t('facility.doctors')}</strong>
-          <p>{t('adminDashboard.documentDownloadHelp')}</p>
-          {documents.length ? documents.map(document => <div key={document._id}>
-            {document.title} ({t(`facility.documentTypes.${document.documentType}`)}) — {t(`facility.documentStatuses.${document.verificationStatus}`)}
-            <button type="button" disabled={busy} onClick={() => download(document)}>{t('facility.viewDocument')}</button>
-            {document.verificationStatus === 'pending' && <>
-              <button type="button" disabled={busy} onClick={() => perform(
-                () => verifyProfessionalDocument(document._id, 'verified'),
-                t('facility.documentVerified')
-              )}>{t('adminDashboard.verifyDocument')}</button>
-              <button type="button" disabled={busy} onClick={() => perform(
-                () => verifyProfessionalDocument(document._id, 'rejected'),
-                t('facility.documentRejected')
-              )}>{t('facility.reject')}</button>
-            </>}
-          </div>) : <p>{t('adminDashboard.noCredentialDocuments')}</p>}
-          {profile.profileVerifiedAt ? <p>{t('adminDashboard.verified')}</p> : <>
-            {!profileComplete && <p>{t('adminDashboard.profileIncomplete')}</p>}
-            {!hasVerifiedQualification && <p>{t('adminDashboard.qualificationDocumentRequired')}</p>}
-            {!hasVerifiedRegistration && <p>{t('adminDashboard.registrationDocumentRequired')}</p>}
-            <button type="button" className="role-dashboard-primary" disabled={busy || !canVerify}
-              onClick={() => perform(
-                () => verifyFacilityDoctor(doctor._id),
-                t('adminDashboard.doctorProfileVerified', { name: doctor.name }),
-                true
-              )}>{t('adminDashboard.verifyProfessionalProfile')}</button>
-          </>}
+        <div className="admin-credential-panel">
+          <div className="admin-credential-heading">
+            <div><h3>{t('adminDashboard.credentialDocuments')}</h3><p>{t('adminDashboard.documentDownloadHelp')}</p></div>
+            <span>{documents.length}</span>
+          </div>
+          {documents.length ? <div className="admin-credential-list">
+            {documents.map(document => <article className="admin-credential-card" key={document._id}>
+              <div className="admin-credential-copy">
+                <strong>{document.title}</strong>
+                <span>{t(`facility.documentTypes.${document.documentType}`)}</span>
+              </div>
+              <span className={`admin-doctor-status admin-doctor-status-${document.verificationStatus}`}>
+                {t(`facility.documentStatuses.${document.verificationStatus}`)}
+              </span>
+              <div className="admin-credential-actions">
+                <button type="button" className="role-dashboard-secondary" disabled={busy} onClick={() => download(document)}>{t('facility.viewDocument')}</button>
+                {document.verificationStatus === 'pending' && <>
+                  <button type="button" className="role-dashboard-primary" disabled={busy} onClick={() => perform(
+                    () => verifyProfessionalDocument(document._id, 'verified'),
+                    t('facility.documentVerified')
+                  )}>{t('adminDashboard.verifyDocument')}</button>
+                  <button type="button" className="role-dashboard-secondary" disabled={busy} onClick={() => perform(
+                    () => verifyProfessionalDocument(document._id, 'rejected'),
+                    t('facility.documentRejected')
+                  )}>{t('facility.reject')}</button>
+                </>}
+              </div>
+            </article>)}
+          </div> : <p className="admin-credential-empty">{t('adminDashboard.noCredentialDocuments')}</p>}
+        </div>
+        <div className="admin-profile-verification">
+          <div>
+            <h3>{t('adminDashboard.profileVerificationTitle')}</h3>
+            {profile.profileVerifiedAt ? <p className="admin-verification-ready">{t('adminDashboard.doctorProfileVerified', { name: doctor.name })}</p> : <div className="admin-verification-checks">
+              {!profileComplete && <p>{t('adminDashboard.profileIncomplete')}</p>}
+              {!hasVerifiedQualification && <p>{t('adminDashboard.qualificationDocumentRequired')}</p>}
+              {!hasVerifiedRegistration && <p>{t('adminDashboard.registrationDocumentRequired')}</p>}
+            </div>}
+          </div>
+          {!profile.profileVerifiedAt && <button type="button" className="role-dashboard-primary" disabled={busy || !canVerify}
+            onClick={() => perform(
+              () => verifyFacilityDoctor(doctor._id),
+              t('adminDashboard.doctorProfileVerified', { name: doctor.name }),
+              true
+            )}>{t('adminDashboard.verifyProfessionalProfile')}</button>}
         </div>
       </>}
     </> : <p className="role-dashboard-empty">{t('adminDashboard.noDoctorsForVerification')}</p>}

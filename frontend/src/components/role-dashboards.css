@@ -360,6 +360,277 @@
   background: rgba(18, 131, 105, .2);
 }
 
+.role-dashboard-shell .admin-doctor-form label,
+.role-dashboard-shell .admin-doctor-picker,
+.role-dashboard-shell .admin-doctor-hospital-field {
+  color: #355f4d;
+}
+
+.role-dashboard-shell .admin-doctor-form input,
+.role-dashboard-shell .admin-doctor-form select,
+.role-dashboard-shell .admin-doctor-form textarea,
+.role-dashboard-shell .admin-doctor-picker select,
+.role-dashboard-shell .admin-doctor-hospital-field select {
+  border-color: #cbded2;
+  color: #294f40;
+  background: #fff;
+  color-scheme: light;
+}
+
+.admin-doctor-verification .role-dashboard-heading {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e6efe9;
+}
+
+.admin-doctor-picker {
+  display: grid;
+  max-width: 560px;
+  gap: .45rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.admin-doctor-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 1rem;
+}
+
+.admin-doctor-card {
+  display: grid;
+  min-width: 0;
+  gap: .9rem;
+  padding: 1rem;
+  border: 1px solid #dce9e0;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #fff, #f7fbf8);
+}
+
+.admin-doctor-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.admin-doctor-card-heading h3 {
+  margin: 0;
+  color: #254f40;
+  font-size: 1.05rem;
+}
+
+.admin-doctor-card-heading p {
+  margin: .25rem 0 0;
+  color: #627d70;
+  overflow-wrap: anywhere;
+}
+
+.admin-doctor-card-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  margin: 0;
+}
+
+.admin-doctor-card-details > div {
+  min-width: 0;
+  padding: .65rem .75rem;
+  border-radius: 10px;
+  background: #f0f6f2;
+}
+
+.admin-doctor-card-details dt {
+  color: #6b8377;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.admin-doctor-card-details dd {
+  margin: .2rem 0 0;
+  color: #355c4b;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.admin-doctor-hospital-field {
+  display: grid;
+  gap: .4rem;
+  font-size: .84rem;
+  font-weight: 700;
+}
+
+.admin-doctor-hospital-field select {
+  width: 100%;
+  min-height: 44px;
+  padding: .6rem .7rem;
+  border: 1px solid #cbded2;
+  border-radius: 9px;
+}
+
+.admin-doctor-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.admin-doctor-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .65rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.admin-doctor-status-active,
+.admin-doctor-status-verified {
+  border-color: #b8dfc7;
+  color: #286648;
+  background: #eaf7ee;
+}
+
+.admin-doctor-status-inactive,
+.admin-doctor-status-rejected {
+  border-color: #e8c5bd;
+  color: #914c42;
+  background: #fff0ed;
+}
+
+.admin-doctor-status-pending {
+  border-color: #ead9a9;
+  color: #806322;
+  background: #fff8e4;
+}
+
+.admin-credential-panel {
+  margin-top: 1.1rem;
+  padding: 1rem;
+  border: 1px solid #dce9e0;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.admin-credential-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .85rem;
+}
+
+.admin-credential-heading h3,
+.admin-profile-verification h3 {
+  margin: 0;
+  color: #2e5b48;
+  font-size: 1rem;
+}
+
+.admin-credential-heading p {
+  margin: .35rem 0 0;
+  color: #607b6e;
+  line-height: 1.5;
+}
+
+.admin-credential-heading > span {
+  display: grid;
+  min-width: 2rem;
+  min-height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #2f6b57;
+  background: #e5f3e9;
+  font-weight: 800;
+}
+
+.admin-credential-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.admin-credential-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .7rem 1rem;
+  padding: .85rem;
+  border: 1px solid #e0ebe4;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.admin-credential-copy {
+  display: grid;
+  min-width: 0;
+  gap: .25rem;
+}
+
+.admin-credential-copy strong {
+  color: #315746;
+  overflow-wrap: anywhere;
+}
+
+.admin-credential-copy span {
+  color: #71877c;
+  font-size: .82rem;
+}
+
+.admin-credential-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.admin-credential-actions button {
+  min-height: 38px;
+}
+
+.admin-credential-empty {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 10px;
+  color: #637d70;
+  background: #edf5f0;
+}
+
+.admin-profile-verification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: .9rem;
+  padding: 1rem;
+  border: 1px solid #cfe4d5;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #f0f8f2, #fbfdfb);
+}
+
+.admin-profile-verification > div {
+  min-width: 0;
+}
+
+.admin-verification-checks {
+  display: grid;
+  gap: .3rem;
+  margin-top: .45rem;
+}
+
+.admin-verification-checks p {
+  margin: 0;
+  color: #825e25;
+  line-height: 1.45;
+}
+
+.admin-profile-verification .admin-verification-ready {
+  margin: .4rem 0 0;
+  color: #2f6b57;
+  line-height: 1.45;
+}
+
 @media (max-width: 700px) {
   .patient-profile-form,
   .admin-doctor-form {
@@ -376,5 +647,10 @@
 
   .admin-report-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-profile-verification {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

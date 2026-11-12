@@ -115,6 +115,42 @@ test('active doctors get actionable guidance when administrator verification is 
   );
 });
 
+test('availability validation distinguishes past starts, invalid ends, and excessive duration', async t => {
+  const originalFindOne = models.User.findOne;
+  t.after(() => { models.User.findOne = originalFindOne; });
+  models.User.findOne = () => ({
+    select() { return this; },
+    async lean() {
+      return {
+        isActive: true,
+        approvalStatus: 'approved',
+        hospital: new mongoose.Types.ObjectId(),
+        doctorProfile: { profileVerifiedAt: new Date() }
+      };
+    }
+  });
+  const doctor = { _id: new mongoose.Types.ObjectId(), role: 'doctor' };
+  const now = Date.now();
+  const availability = (start, end) => ({
+    startsAt: new Date(start).toISOString(),
+    endsAt: new Date(end).toISOString(),
+    slotMinutes: 30
+  });
+
+  await assert.rejects(
+    telemedicine.addAvailability(availability(now - 60_000, now + 60 * 60_000), doctor),
+    /start time must be in the future/
+  );
+  await assert.rejects(
+    telemedicine.addAvailability(availability(now + 60 * 60_000, now + 59 * 60_000), doctor),
+    /end time must be after the start time/
+  );
+  await assert.rejects(
+    telemedicine.addAvailability(availability(now + 60 * 60_000, now + 13 * 60 * 60_000 + 1), doctor),
+    /cannot exceed 12 hours/
+  );
+});
+
 test('consultation room responses keep doctor notes private from the patient', async t => {
   const originals = {
     findAppointment: models.Appointment.findById,

@@ -101,7 +101,10 @@ async function addAvailability(body, user) {
   }
   const startsAt = validDate(body.startsAt), endsAt = validDate(body.endsAt);
   const slotMinutes = Math.min(120, Math.max(15, Number.parseInt(body.slotMinutes, 10) || 30));
-  if (!startsAt || !endsAt || startsAt <= new Date() || endsAt <= startsAt || endsAt - startsAt > 12 * 60 * 60 * 1000) throw new ApiError(400, 'Choose a valid future availability window up to 12 hours');
+  if (!startsAt || !endsAt) throw new ApiError(400, 'Choose valid start and end times');
+  if (startsAt <= new Date()) throw new ApiError(400, 'Availability start time must be in the future');
+  if (endsAt <= startsAt) throw new ApiError(400, 'Availability end time must be after the start time');
+  if (endsAt - startsAt > 12 * 60 * 60 * 1000) throw new ApiError(400, 'Availability window cannot exceed 12 hours');
   const step = slotMinutes * 60000, docs = [];
   for (let time = startsAt.getTime(); time + step <= endsAt.getTime(); time += step) docs.push({ doctor: user._id, startsAt: new Date(time), endsAt: new Date(time + step), slotMinutes });
   if (!docs.length) throw new ApiError(400, 'Availability window must fit at least one full appointment slot');

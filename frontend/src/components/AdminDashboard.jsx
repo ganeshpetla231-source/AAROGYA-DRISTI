@@ -243,36 +243,49 @@ export function AdminDashboard({ sections = adminSections, initialSection = 'ove
     {section === 'staff' && <><StaffAccountProvisioning/><HealthcareWorkers role="admin"/></>}
     {section === 'doctors' && <><section className="role-dashboard-panel">
       <header className="role-dashboard-heading"><div><p className="section-overline">{t('adminDashboard.accessControl')}</p><h2>{t('adminDashboard.doctorsTitle')}</h2><p>{t('adminDashboard.doctorDescription')}</p></div></header>
-      {pendingDoctors.length ? <div className="role-dashboard-table-wrap"><table className="role-dashboard-table">
-        <thead><tr><th>{t('adminDashboard.name')}</th><th>{t('adminDashboard.staffId')}</th><th>{t('adminDashboard.email')}</th><th>{t('adminDashboard.district')}</th><th>{t('adminDashboard.decision')}</th></tr></thead>
-        <tbody>{pendingDoctors.map(doctor => <tr key={doctor._id}>
-          <td>{doctor.name}</td><td>{doctor.staffId || '—'}</td><td>{doctor.email}</td><td>{doctor.district || '—'}</td>
-          <td className="role-dashboard-actions">
+      {pendingDoctors.length ? <div className="admin-doctor-card-list">
+        {pendingDoctors.map(doctor => <article className="admin-doctor-card admin-doctor-card-pending" key={doctor._id}>
+          <div className="admin-doctor-card-heading">
+            <div><h3>{doctor.name}</h3><p>{doctor.staffId || '—'} · {doctor.email}</p></div>
+            <span className="admin-doctor-status admin-doctor-status-pending">{t('adminDashboard.approvalPending')}</span>
+          </div>
+          <dl className="admin-doctor-card-details">
+            <div><dt>{t('adminDashboard.district')}</dt><dd>{doctor.district || '—'}</dd></div>
+          </dl>
+          <div className="admin-doctor-card-actions">
             <button type="button" className="role-dashboard-primary" disabled={busyId === doctor._id} onClick={() => decideDoctor(doctor, 'approve')}>{t('adminDashboard.approve')}</button>
             <button type="button" className="role-dashboard-secondary" disabled={busyId === doctor._id} onClick={() => decideDoctor(doctor, 'reject')}>{t('adminDashboard.reject')}</button>
-          </td>
-        </tr>)}</tbody>
-      </table></div> : <p className="role-dashboard-empty">{t('adminDashboard.noPendingDoctors')}</p>}
+          </div>
+        </article>)}
+      </div> : <p className="role-dashboard-empty">{t('adminDashboard.noPendingDoctors')}</p>}
       <PaginationControls pagination={pendingPagination} onPageChange={setPendingPage} label={t('adminDashboard.pendingDoctorsPagination')} loading={loading}/>
     </section>
     <section className="role-dashboard-panel">
       <header className="role-dashboard-heading"><div><h2>{t('adminDashboard.activeDoctorsTitle')}</h2><p>{t('adminDashboard.activeDoctorsHelp')}</p></div></header>
-      {approvedDoctors.length ? <div className="role-dashboard-table-wrap"><table className="role-dashboard-table">
-        <thead><tr><th>{t('adminDashboard.name')}</th><th>{t('adminDashboard.staffId')}</th><th>{t('adminDashboard.email')}</th><th>{t('adminDashboard.district')}</th><th>{t('adminDashboard.doctorHospital')}</th><th>{t('adminDashboard.professionalVerification')}</th><th>{t('adminDashboard.accountStatus')}</th></tr></thead>
-        <tbody>{approvedDoctors.map(doctor => <tr key={doctor._id}>
-          <td>{doctor.name}</td><td>{doctor.staffId || '—'}</td><td>{doctor.email}</td><td>{doctor.district || '—'}</td>
-          <td><select aria-label={t('adminDashboard.assignHospitalTo', { name: doctor.name })}
-            value={doctor.hospital?._id || ''} disabled={busyId === doctor._id || !hospitals.length}
-            onChange={event => assignHospital(doctor, event.target.value)}>
-            <option value="">{hospitals.length ? t('adminDashboard.assignHospital') : t('adminDashboard.noActiveHospitals')}</option>
-            {doctor.hospital && !hospitals.some(hospital => hospital._id === doctor.hospital._id) &&
-              <option value={doctor.hospital._id}>{doctor.hospital.name} ({t('adminDashboard.inactive')})</option>}
-            {hospitals.map(hospital => <option key={hospital._id} value={hospital._id}>{hospital.name}</option>)}
-          </select></td>
-          <td>{doctor.profileVerified ? t('adminDashboard.verified') : doctor.hospital ? t('adminDashboard.verificationRequired') : t('adminDashboard.notAssigned')}</td>
-          <td>{doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')}</td>
-        </tr>)}</tbody>
-      </table></div> : <p className="role-dashboard-empty">{t('adminDashboard.noActiveDoctors')}</p>}
+      {approvedDoctors.length ? <div className="admin-doctor-card-list">
+        {approvedDoctors.map(doctor => <article className="admin-doctor-card" key={doctor._id}>
+          <div className="admin-doctor-card-heading">
+            <div><h3>{doctor.name}</h3><p>{doctor.staffId || '—'} · {doctor.email}</p></div>
+            <span className={`admin-doctor-status ${doctor.isActive ? 'admin-doctor-status-active' : 'admin-doctor-status-inactive'}`}>
+              {doctor.isActive ? t('adminDashboard.active') : t('adminDashboard.inactive')}
+            </span>
+          </div>
+          <dl className="admin-doctor-card-details">
+            <div><dt>{t('adminDashboard.district')}</dt><dd>{doctor.district || '—'}</dd></div>
+            <div><dt>{t('adminDashboard.professionalVerification')}</dt><dd>{doctor.profileVerified ? t('adminDashboard.verified') : doctor.hospital ? t('adminDashboard.verificationRequired') : t('adminDashboard.notAssigned')}</dd></div>
+          </dl>
+          <label className="admin-doctor-hospital-field">{t('adminDashboard.assignHospitalTo', { name: doctor.name })}
+            <select aria-label={t('adminDashboard.assignHospitalTo', { name: doctor.name })}
+              value={doctor.hospital?._id || ''} disabled={busyId === doctor._id || !hospitals.length}
+              onChange={event => assignHospital(doctor, event.target.value)}>
+              <option value="">{hospitals.length ? t('adminDashboard.assignHospital') : t('adminDashboard.noActiveHospitals')}</option>
+              {doctor.hospital && !hospitals.some(hospital => hospital._id === doctor.hospital._id) &&
+                <option value={doctor.hospital._id}>{doctor.hospital.name} ({t('adminDashboard.inactive')})</option>}
+              {hospitals.map(hospital => <option key={hospital._id} value={hospital._id}>{hospital.name}</option>)}
+            </select>
+          </label>
+        </article>)}
+      </div> : <p className="role-dashboard-empty">{t('adminDashboard.noActiveDoctors')}</p>}
       <PaginationControls pagination={approvedPagination} onPageChange={setApprovedPage} label={t('adminDashboard.doctorOptionsPagination')} loading={loading}/>
     </section>
     <AdminDoctorVerification onChanged={load}/></>}
